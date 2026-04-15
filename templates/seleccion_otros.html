@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Selección Otros - {{ sede }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    <style>
+        :root { 
+            --easd-blue: #003366; 
+            --easd-bg: #a8a8a8;  /* Fondo gris brillante */
+            --easd-orange: #ff5023; /* Naranja idéntico al de tu captura */
+        }
+        
+        body { 
+            background-color: var(--easd-bg); 
+            font-family: 'Segoe UI', sans-serif; 
+            margin: 0; 
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Cabecera idéntica a tus capturas */
+        .header-easd {
+            background: white; 
+            padding: 15px 50px; 
+            border-bottom: 4px solid var(--easd-blue);
+            display: flex; 
+            align-items: center; 
+            justify-content: space-between;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .logos-container { display: flex; align-items: center; gap: 20px; }
+        .logo-img { max-height: 50px; width: auto; }
+
+        .title-container { text-align: center; flex-grow: 1; }
+        .title-container h1 { 
+            margin: 0; 
+            font-size: 1.8rem; 
+            font-weight: 900; 
+            color: var(--easd-blue); 
+            text-transform: uppercase; 
+        }
+        .title-container p { margin: 0; font-size: 0.9rem; font-weight: 700; color: #64748b; text-transform: uppercase; }
+
+        .btn-volver {
+            border: 2px solid var(--easd-blue); 
+            color: var(--easd-blue); 
+            padding: 8px 25px;
+            border-radius: 50px; 
+            text-decoration: none; 
+            font-weight: 800; 
+            transition: 0.3s;
+            text-transform: uppercase;
+            font-size: 0.85rem;
+        }
+        .btn-volver:hover { background: var(--easd-blue); color: white; }
+
+        /* Contenedor de tarjetas */
+        .container-cards {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+            padding: 40px;
+            flex-wrap: wrap;
+        }
+
+        /* Estilo base de tarjeta */
+        .card-sel {
+            background: white;
+            width: 240px;
+            height: 280px;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            text-decoration: none;
+            color: var(--easd-blue);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            transition: all 0.3s ease-in-out; /* Transición suave para todos los cambios */
+            padding: 20px;
+            border: 2px solid transparent; /* Borde invisible inicial */
+        }
+
+        /* --- CORRECCIÓN AQUÍ: EFECTO HOVER (PASAR EL RATÓN) --- */
+        /* Replicando el diseño de la captura: al pasar el ratón, borde naranja y texto naranja */
+        .card-sel:hover {
+            transform: translateY(-10px); /* Se eleva un poco */
+            box-shadow: 0 15px 35px rgba(255, 80, 35, 0.15); /* Sombra naranja sutil */
+            
+            border-color: var(--easd-orange) !important; /* Borde naranja */
+            color: var(--easd-orange) !important; /* El texto y el icono cambian a naranja */
+        }
+
+        .card-sel i {
+            font-size: 4rem;
+            margin-bottom: 15px;
+            /* El icono heredará el color de .card-sel:hover */
+        }
+
+        .card-sel h2 {
+            font-size: 1.2rem;
+            font-weight: 900;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .card-sel p {
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-top: 8px;
+            font-weight: 600;
+            transition: color 0.3s ease; /* Transición para el texto pequeño */
+        }
+
+        /* Al pasar el ratón, el texto secundario también puede cambiar a naranja sutilmente */
+        .card-sel:hover p {
+            color: var(--easd-orange) !important;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header-easd">
+        <div class="logos-container">
+            <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" alt="Logo 1" class="logo-img">
+            <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" alt="Logo 2" class="logo-img">
+        </div>
+
+        <div class="title-container">
+            <h1>OTROS - {{ sede }}</h1>
+            <p>Selecciona el modelo de torre</p>
+        </div>
+
+        <div>
+            <a href="{{ url_for('ver_sede', nombre_sede=sede) }}" class="btn-volver">
+                ← Volver
+            </a>
+        </div>
+    </header>
+
+    <main class="container-cards">
+        <a href="{{ url_for('ver_sede', nombre_sede=sede, cat='OTROS', estado='Gigabyte') }}" class="card-sel">
+            <i class="bi bi-pc-display"></i>
+            <h2>Gigabyte</h2>
+            <p>Torres Personalizadas</p>
+        </a>
+
+        <a href="{{ url_for('ver_sede', nombre_sede=sede, cat='OTROS', estado='Dell') }}" class="card-sel">
+            <i class="bi bi-pc-display"></i>
+            <h2>Dell</h2>
+            <p>Torres de Oficina</p>
+        </a>
+
+        <a href="{{ url_for('ver_sede', nombre_sede=sede, cat='OTROS', estado='Nox') }}" class="card-sel">
+            <i class="bi bi-pc-display"></i>
+            <h2>Nox</h2>
+            <p>Chasis / Gaming</p>
+        </a>
+    </main>
+
+</body>
+</html>

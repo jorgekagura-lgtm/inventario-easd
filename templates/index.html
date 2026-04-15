@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario EASD - Inicio</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <style>
+        :root { --easd-blue: #003366; --easd-bg: #a8a8a8;  }
+        body { background-color: var(--easd-bg); margin: 0; font-family: sans-serif; }
+
+        /* CABECERA (Igual que en Sede) */
+        .header-bar {
+            background: white;
+            padding: 20px 50px;
+            border-bottom: 3px solid var(--easd-blue);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-item { flex: 1; display: flex; align-items: center; }
+        .logo-container { justify-content: flex-start; }
+        .logo-img { max-height: 80px; width: auto; }
+
+        .titulo-centro {
+            text-align: center;
+            flex: 2;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        .titulo-grande {
+            font-size: 2.8rem;
+            font-weight: 800;
+            color: var(--easd-blue);
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        /* DISEÑO DE TARJETAS DE SEDE */
+        .grid-sedes {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 80px;
+            padding: 0 50px;
+        }
+
+        .card-sede {
+            background: white;
+            padding: 50px 40px;
+            border-radius: 20px;
+            text-align: center;
+            width: 350px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            text-decoration: none !important;
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+
+        .card-sede:hover {
+            transform: translateY(-10px);
+            border-color: var(--easd-blue);
+            box-shadow: 0 10px 30px rgba(0, 51, 102, 0.1);
+        }
+
+        .card-sede i {
+            font-size: 4rem;
+            color: var(--easd-blue);
+            margin-bottom: 25px;
+            display: block;
+        }
+
+        .card-sede h2 {
+            font-weight: 800;
+            color: var(--easd-blue);
+            margin-bottom: 15px;
+            letter-spacing: 1px;
+        }
+
+        .card-sede p {
+            color: #6c757d;
+            font-size: 1rem;
+            line-height: 1.5;
+            margin-bottom: 0;
+        }
+
+        .footer {
+            margin-top: 100px;
+            text-align: center;
+            color: #b2bec3;
+            font-size: 0.9rem;
+            padding-bottom: 40px;
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header-bar">
+        <div class="header-item logo-container">
+            <img src="{{ url_for('static', filename='img/easd-valencia-1.png') }}" alt="Logo EASD" class="logo-img">
+            <img src="{{ url_for('static', filename='img/easd-valencia-2.png') }}" alt="Logo EASD" class="logo-img">
+        </div>
+
+        <div class="header-item titulo-centro">
+            <h1 class="titulo-grande">INVENTARIO TECNOLÓGICO</h1>
+            <p style="color: #6c757d; letter-spacing: 3px; margin: 0; font-weight: 300;">SISTEMA CENTRAL DE GESTIÓN</p>
+        </div>
+
+        <div class="header-item"></div>
+    </header>
+
+    <main class="container">
+        <div class="grid-sedes">
+            <a href="{{ url_for('ver_sede', nombre_sede='Velluters') }}" class="card-sede">
+                <i class="bi bi-building-fill"></i>
+                <h2>VELLUTERS</h2>
+                <p>Gestión de equipos HP, Macs, APDS y nuevos suministros en la sede principal.</p>
+            </a>
+
+            <a href="{{ url_for('ver_sede', nombre_sede='Vivers') }}" class="card-sede">
+                <i class="bi bi-building-gear"></i>
+                <h2>VIVERS</h2>
+                <p>Control de hardware, periféricos y mantenimiento técnico de la sede Vivers.</p>
+            </a>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 EASD - Panel de Control Interno</p>
+    </footer>
+
+</body>
+</html>

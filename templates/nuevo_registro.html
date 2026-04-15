@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Registro - {{ categoria }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/bootstrap.min.css" rel="stylesheet">
+    <style>
+        :root { 
+            --easd-blue: #003366; 
+            --easd-sky: #a8a8a8; 
+            --easd-orange: #ff5023; 
+        }
+        
+        body { 
+            background-color: var(--easd-sky); 
+            font-family: 'Segoe UI', sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+            margin: 0; 
+        }
+
+        .header-form {
+            width: 100%;
+            background: white;
+            padding: 15px 40px;
+            display: flex;
+            justify-content: flex-start;
+            gap: 20px;
+            align-items: center;
+            border-bottom: 4px solid var(--easd-blue);
+            margin-bottom: 30px;
+        }
+
+        .card-custom { 
+            width: 100%;
+            max-width: 550px; 
+            background: white;
+            border-radius: 25px; 
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3); 
+            overflow: hidden; 
+            border: none;
+            margin-bottom: 40px;
+        }
+
+        .card-header { 
+            background: var(--easd-blue); 
+            color: white; 
+            text-align: center; 
+            padding: 25px; 
+            border-bottom: 6px solid var(--easd-orange); 
+        }
+
+        .card-header h3 { font-weight: 900; letter-spacing: 1px; margin: 0; }
+
+        .card-body { padding: 40px; }
+
+        .form-content-wrapper { width: 100%; }
+
+        .form-label {
+            font-weight: 800;
+            color: var(--easd-blue);
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            margin-bottom: 12px;
+            display: block;
+            text-align: center;
+        }
+
+        .form-control, .form-select { 
+            width: 100%;
+            border-radius: 12px; 
+            padding: 14px; 
+            border: 2px solid #edf2f7;
+            background-color: #f8fafc;
+            font-weight: 600;
+            text-align: center; 
+        }
+
+        /* Corregir alineación del texto en el select para que coincida con el input */
+        .form-select { text-align-last: center; }
+
+        .form-section-title { 
+            font-size: 0.85rem; 
+            font-weight: 900; 
+            color: var(--easd-blue); 
+            text-transform: uppercase; 
+            margin: 40px 0 30px; 
+            text-align: center; 
+            border-bottom: 2px solid #eee; 
+            line-height: 0.1em; 
+        }
+        .form-section-title span { background:#fff; padding:0 15px; }
+        
+        .form-group-custom { margin-bottom: 25px; width: 100%; }
+
+        .switch-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 20px 0;
+            width: 100%;
+        }
+
+        .btn-save { 
+            background: var(--easd-orange); 
+            border: none; 
+            color: white; 
+            font-weight: 800; 
+            padding: 15px; 
+            border-radius: 12px;
+            width: 100%;
+            text-transform: uppercase;
+            margin-top: 20px;
+            box-shadow: 0 4px 12px rgba(255, 80, 35, 0.2);
+        }
+
+        .btn-cancel { 
+            background: #f1f5f9; 
+            border: none; 
+            color: #64748b; 
+            font-weight: 800; 
+            padding: 12px; 
+            border-radius: 12px;
+            text-decoration: none;
+            display: block;
+            width: 100%;
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        @media (max-width: 600px) {
+            .header-form { padding: 10px 20px; gap: 10px; }
+            .header-form img { max-height: 30px !important; }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="header-form">
+        <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" style="max-height: 45px;">
+        <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" style="max-height: 45px;">
+    </header>
+
+    <div class="card card-custom">
+        <div class="card-header">
+            <h3 class="m-0">{{ 'EDITAR' if equipo else 'AÑADIR' }} {{ categoria }}</h3>
+            <small class="fw-bold opacity-75">{{ sede }} | {{ estado }}</small>
+        </div>
+
+        <div class="card-body">
+            <div class="form-content-wrapper">
+<form action="{{ url_for('actualizar_equipo') if equipo else url_for('agregar_equipo') }}" method="POST">
+    {% if equipo %}<input type="hidden" name="id" value="{{ equipo.id }}">{% endif %}
+    <input type="hidden" name="sede" value="{{ sede }}">
+    <input type="hidden" name="categoria" value="{{ categoria }}">
+    <input type="hidden" name="estado" value="{{ estado }}">
+
+    <div class="form-group-custom">
+        <label class="form-label">UBICACIÓN / AULA</label>
+        <input type="text" name="ubicacion" class="form-control" value="{{ equipo.ubicacion if equipo else last_ub }}" required>
+    </div>
+
+    <p class="form-section-title"><span>DATOS TÉCNICOS</span></p>
+
+    {# Selector de Pantalla para todos menos APDS #}
+    {% if categoria != 'APDS' %}
+    <div class="form-group-custom">
+        <label class="form-label">PANTALLA (TV / Interactiva)</label>
+        <select name="tipo_pantalla" class="form-select">
+            <option value="0" {% if not equipo or equipo.preparado == 0 %}selected{% endif %}>Ninguna / No aplica</option>
+            <option value="1" {% if equipo and equipo.preparado == 1 %}selected{% endif %}>TV</option>
+            <option value="2" {% if equipo and equipo.preparado == 2 %}selected{% endif %}>Pantalla Interactiva</option>
+        </select>
+    </div>
+    {% endif %}
+
+    <div class="form-group-custom">
+        <label class="form-label">Nº SERIE DISPOSITIVO</label>
+        <input type="text" name="ns_torre" class="form-control" value="{{ equipo.ns_torre if equipo else '' }}" required autofocus>
+    </div>
+
+    {% if categoria == 'MACS' %}
+        <div class="form-group-custom">
+            <label class="form-label">ID INVENTARIO / TIPO</label>
+            <input type="text" name="id_inv_torre" class="form-control" value="{{ equipo.id_inv_torre if equipo else '' }}">
+        </div>
+    {% elif categoria == 'APDS' %}
+        <div class="switch-container">
+            <label class="form-label">¿EQUIPO PREPARADO?</label>
+            <div class="form-check form-switch">
+                <input class="form-check-input" type="checkbox" name="preparado" id="preparado" {% if equipo and equipo.preparado %}checked{% endif %}>
+            </div>
+        </div>
+    {% elif categoria == 'HP' and estado == 'Nuevos' %}
+        {# Solo para HP Nuevos #}
+        <div class="form-group-custom">
+            <label class="form-label">ID INV. TORRE</label>
+            <input type="text" name="id_inv_torre" class="form-control" value="{{ equipo.id_inv_torre if equipo else '' }}">
+        </div>
+        <div class="form-group-custom">
+            <label class="form-label">Nº SERIE MONITOR</label>
+            <input type="text" name="ns_monitor" class="form-control" value="{{ equipo.ns_monitor if equipo else '' }}">
+        </div>
+        <div class="form-group-custom">
+            <label class="form-label">ID INV. MONITOR</label>
+            <input type="text" name="id_inv_monitor" class="form-control" value="{{ equipo.id_inv_monitor if equipo else '' }}">
+        </div>
+        <div class="form-group-custom">
+            <label class="form-label">PROGRAMAS / APLICACIONES</label>
+            <textarea name="aplicaciones" class="form-control" rows="2">{{ equipo.aplicaciones if equipo else '' }}</textarea>
+        </div>
+    {% else %}
+        {# Para HP Viejos y Otros #}
+        <div class="form-group-custom">
+            <label class="form-label">CARACTERÍSTICAS / ID INV.</label>
+            <textarea name="id_inv_torre" class="form-control" rows="2">{{ equipo.id_inv_torre if equipo else '' }}</textarea>
+        </div>
+        <div class="form-group-custom">
+            <label class="form-label">PROGRAMAS / APLICACIONES</label>
+            <textarea name="aplicaciones" class="form-control" rows="2">{{ equipo.aplicaciones if equipo else '' }}</textarea>
+        </div>
+    {% endif %}
+
+    <div class="form-group-custom">
+        <label class="form-label">ANOTACIONES</label>
+        <textarea name="anotaciones" class="form-control" rows="2">{{ equipo.anotaciones if equipo else '' }}</textarea>
+    </div>
+
+    <div class="pt-3">
+        <button type="submit" class="btn btn-save">GUARDAR REGISTRO</button>
+        <a href="{{ url_for('ver_sede', nombre_sede=sede, cat=categoria, estado=estado) }}" class="btn btn-cancel">CANCELAR</a>
+    </div>
+</form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

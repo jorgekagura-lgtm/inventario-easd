@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventario EASD - {{ sede }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+    
+    <style>
+        :root { --easd-blue: #003366; --easd-bg: #a8a8a8;  }
+        body { background-color: var(--easd-bg); margin: 0; font-family: sans-serif; }
+
+        .header-bar {
+            background: white;
+            padding: 20px 50px;
+            border-bottom: 3px solid var(--easd-blue);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-item { flex: 1; display: flex; align-items: center; }
+        .logo-container { justify-content: flex-start; gap: 15px; }
+        .logo-img { max-height: 70px; width: auto; }
+
+        .titulo-centro { text-align: center; flex: 2; flex-direction: column; justify-content: center; }
+        .titulo-grande { font-size: 3rem; font-weight: 800; color: var(--easd-blue); margin: 0; text-transform: uppercase; }
+
+        .btn-inicio {
+            border: 2px solid #6c757d; color: #6c757d; padding: 10px 25px;
+            border-radius: 50px; text-decoration: none; font-weight: bold; transition: 0.3s;
+        }
+        .btn-inicio:hover { background: #6c757d; color: white; }
+
+        .grid-categorias {
+            display: flex; justify-content: center; gap: 20px;
+            margin-top: 50px; padding: 0 50px; flex-wrap: wrap;
+        }
+
+        .card-cat {
+            background: white; padding: 40px; border-radius: 15px;
+            text-align: center; width: 180px; box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            cursor: pointer; transition: 0.3s; text-decoration: none; color: var(--easd-blue);
+        }
+
+        .card-cat:hover { transform: translateY(-10px); background: var(--easd-blue); color: white; }
+        .card-cat i { font-size: 3.5rem; margin-bottom: 10px; display: block; }
+        .card-cat span { font-weight: 800; text-transform: uppercase; }
+    </style>
+</head>
+<body>
+
+    <header class="header-bar">
+        <div class="header-item logo-container">
+            <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" alt="Logo 1" class="logo-img">
+            <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" alt="Logo 2" class="logo-img">
+        </div>
+
+        <div class="header-item titulo-centro">
+            <h1 class="titulo-grande">{{ sede }}</h1>
+            <p style="color: #6c757d; letter-spacing: 3px; margin: 0; font-weight: 700;">PANEL DE GESTIÓN</p>
+        </div>
+
+        <div class="header-item" style="justify-content: flex-end;">
+            <a href="/" class="btn-inicio"><i class="bi bi-house-door"></i> Inicio</a>
+        </div>
+    </header>
+
+<main class="grid-categorias">
+    <a href="/sede/{{ sede }}?cat=HP" class="card-cat">
+        <i class="bi bi-pc"></i><span>HP</span>
+    </a>
+    
+    <a href="/sede/{{ sede }}?cat=MACS" class="card-cat">
+        <i class="bi bi-apple"></i><span>Mac</span>
+    </a>
+    
+    <a href="/sede/{{ sede }}?cat=APDS" class="card-cat">
+        <i class="bi bi-router"></i><span>Apd</span>
+    </a>
+
+    <a href="/sede/{{ sede }}?cat=OTROS" class="card-cat">
+        <i class="bi bi-device-hdd"></i><span>Otros</span>
+    </a>
+</main>
+
+</body>
+</html>

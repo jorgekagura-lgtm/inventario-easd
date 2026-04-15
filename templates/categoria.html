@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ categoria }} - {{ sede }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
+<style>
+    :root { 
+        --easd-blue: #003366; 
+        --easd-bg: #a8a8a8; 
+        --easd-orange: #ff5023; 
+        --easd-sky: #a8a8a8;
+    }
+    
+    body { background-color: var(--easd-sky); font-family: 'Segoe UI', sans-serif; margin: 0; min-height: 100vh; overflow-x: hidden; }
+
+    .header-easd { 
+        background: white; 
+        padding: 15px 40px; 
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 4px solid var(--easd-blue);
+    }
+
+    .header-title { position: absolute; left: 50%; transform: translateX(-50%); text-align: center; }
+    .header-title h1 { margin: 0; color: var(--easd-blue); font-weight: 900; font-size: 1.8rem; }
+
+    .header-buttons { display: flex; gap: 10px; align-items: center; z-index: 10; }
+    .btn-add { background-color: var(--easd-orange); color: white; border-radius: 50px; font-weight: bold; padding: 8px 20px; text-decoration: none; font-size: 0.9rem; }
+    .btn-back { border: 2px solid var(--easd-blue); color: var(--easd-blue); border-radius: 50px; font-weight: bold; padding: 6px 20px; text-decoration: none; font-size: 0.9rem; }
+    .btn-back:hover { background: var(--easd-blue); color: white; }
+
+    .top-controls { padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; }
+    .search-container { position: relative; width: 450px; }
+    .search-container i { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #888; }
+    .search-input { width: 100%; padding: 12px 15px 12px 45px; border-radius: 12px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.1); font-weight: 500; }
+
+    .counter-badge { 
+        background: white; padding: 10px 25px; border-radius: 12px; 
+        border-bottom: 5px solid var(--easd-orange); font-weight: 800; 
+        color: var(--easd-blue); box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+    }
+
+    .main-content { padding: 0 40px 40px; }
+    .card-table { background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 100%; overflow: hidden; }
+
+    .table { margin-bottom: 0; width: 100%; border-collapse: collapse; }
+    .table thead { background-color: var(--easd-blue); color: white; }
+    .table thead th { padding: 15px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem; text-align: center; text-transform: uppercase; }
+    
+    .table td { border: 1px solid #ccc !important; padding: 12px; vertical-align: middle; }
+
+    .aula-cell { 
+        background-color: #f1f5f9 !important; 
+        text-align: center; 
+        width: 130px;
+        border-right: 4px solid var(--easd-blue) !important; 
+    }
+
+    .aula-tag { background: var(--easd-blue); color: white; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; display: inline-block; }
+
+    .hidden-row { display: none !important; }
+
+    /* Estilo general para las etiquetas de estado */
+.badge {
+    display: inline-block;
+    padding: 5px 12px;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 50px; /* Bordes redondeados tipo píldora */
+    letter-spacing: 0.5px;
+    width: 90px; /* Ancho fijo para que la tabla se vea alineada */
+}
+
+    /* Color para PREPARADO (Verde suave con borde) */
+    .bg-success {
+        background-color: #d4edda !important; /* Verde claro */
+        color: #155724 !important;            /* Texto verde oscuro */
+        border: 1px solid #c3e6cb;
+    }
+
+    /* Color para PENDIENTE (Rojo suave con borde) */
+    .bg-danger {
+        background-color: #f8d7da !important;  /* Rojo claro */
+        color: #721c24 !important;             /* Texto rojo oscuro */
+        border: 1px solid #f5c6cb;
+    }
+
+    /* Efecto opcional: un pequeño punto al lado del texto */
+    .bg-success::before {
+        content: "● ";
+        font-size: 10px;
+        margin-right: 3px;
+    }
+
+    .bg-danger::before {
+        content: "● ";
+        font-size: 10px;
+        margin-right: 3px;
+    }
+
+    @media print {
+        @page { size: landscape; margin: 0.5cm; }
+        .header-buttons, .top-controls, .actions-column { display: none !important; }
+        .header-easd { justify-content: center !important; }
+        .header-title { position: static !important; transform: none !important; }
+        .table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
+        .table th, .table td { border: 1px solid #000 !important; font-size: 8.5pt !important; padding: 5px !important; }
+        .table thead th { background-color: #003366 !important; color: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        /* 1. Forzar que el texto dentro de las celdas de ubicación sea negro */
+        .aula-cell, .aula-cell span, .aula-cell div {
+            color: #000 !important;
+            background-color: transparent !important;
+            font-weight: bold !important;
+            border: none !important; /* Quita el borde del botón si lo tiene */
+            box-shadow: none !important;
+        }
+
+        /* 2. Si usas la clase "badge" de Bootstrap o similar para la ubicación */
+        .badge.bg-primary, .btn-primary {
+            background-color: transparent !important;
+            color: #000 !important;
+            padding: 0 !important;
+        }
+
+        /* 3. Asegurar que no haya sombreados que ensucien la impresión */
+        * {
+            text-shadow: none !important;
+            box-shadow: none !important;
+        }
+        }
+</style>
+</head>
+<body>
+
+    <header class="header-easd">
+        <div class="header-logos" style="display: flex; gap: 15px;">
+            <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" style="max-height: 50px;">
+            <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" style="max-height: 50px;">
+        </div>
+        <div class="header-title">
+            <h1>{{ categoria }}</h1>
+            <p class="m-0 fw-bold text-muted" style="font-size: 0.9rem;">{{ sede | upper }} | {{ estado | upper }}</p>
+        </div>
+        <div class="header-buttons">
+            <button onclick="imprimirTabla()" class="btn-print" style="background-color: #28a745; color: white; border: none; border-radius: 50px; font-weight: bold; padding: 8px 20px; cursor: pointer;">IMPRIMIR</button>
+            
+            <a href="{{ url_for('formulario_nuevo', sede=sede, categoria=categoria, estado=estado) }}" class="btn-add">AÑADIR</a>
+            
+            {% if categoria == 'APDS' %}
+                {# Para APDS, forzamos la vuelta al menú principal de la sede sin parámetros de categoría #}
+                <a href="{{ url_for('ver_sede', nombre_sede=sede) }}" class="btn-back">VOLVER</a>
+            {% else %}
+                {# Para los demás, volvemos a su menú de selección (HP, MACS, OTROS) #}
+                <a href="{{ url_for('ver_sede', nombre_sede=sede, cat=categoria) }}" class="btn-back">VOLVER</a>
+            {% endif %}
+        </div>
+    </header>
+
+    <div class="top-controls">
+        <div class="search-container">
+            <i class="bi bi-search"></i>
+            <input type="text" id="buscador" class="search-input" placeholder="Buscar por serie, características, anotaciones...">
+        </div>
+        <div class="counter-badge">
+            TOTAL <span id="contador">{{ equipos|length }}</span>
+        </div>
+    </div>
+
+    <div class="main-content">
+        <div class="card-table">
+            <table class="table" id="tablaEquipos">
+<thead>
+    <tr>
+        <th style="width: 10%;">UBICACIÓN</th>
+        <th style="width: 15%;">Nº SERIE</th>
+        
+        {# NUEVA COLUMNA PANTALLA #}
+        {% if categoria != 'APDS' %}
+            <th style="width: 10%;">PANTALLA</th>
+        {% endif %}
+
+        {% if categoria == 'MACS' %}
+            <th>{% if estado == 'Activo' %}TIPO{% else %}ID INVENTARIO{% endif %}</th>
+            {% if estado != 'Activo' %}<th>CARACTERÍSTICAS</th>{% endif %}
+        {% elif categoria == 'APDS' %}
+            <th>ESTADO PREPARACIÓN</th>
+        {% elif categoria == 'HP' and estado == 'Nuevos' %}
+            <th>ID INV. TORRE</th>
+            <th>NS MONITOR</th>
+            <th>ID INV. MONITOR</th>
+            <th>APLICACIONES</th>
+        {% else %}
+            <th>CARACTERÍSTICAS</th>
+            <th>PROGRAMAS</th>
+        {% endif %}
+        <th>ANOTACIONES</th>
+        <th class="actions-column">ACCIONES</th>
+    </tr>
+</thead>
+<tbody>
+    {% set grupos = equipos|groupby('ubicacion') %}
+    {% for ubicacion, lista_equipos in grupos %}
+        {% for e in lista_equipos %}
+        <tr class="equipo-row" data-ubicacion="{{ ubicacion }}">
+            {% if loop.first %}
+            <td class="aula-cell" rowspan="{{ lista_equipos|length }}">
+                <span class="aula-tag">{{ ubicacion }}</span>
+            </td>
+            {% endif %}
+            
+            <td class="fw-bold text-center">{{ e.ns_torre or '---' }}</td>
+
+            {# LOGICA PARA MOSTRAR LA PANTALLA EXTRA #}
+            {% if categoria != 'APDS' %}
+                <td class="text-center">
+                    {% if e.preparado == 1 %}
+                        <span class="badge bg-secondary">TV</span>
+                    {% elif e.preparado == 2 %}
+                        <span class="badge bg-info text-dark">Interactiva</span>
+                    {% else %}
+                        ---
+                    {% endif %}
+                </td>
+            {% endif %}
+
+            {% if categoria == 'MACS' %}
+                <td class="text-center">{{ e.id_inv_torre or '---' }}</td>
+                {% if estado != 'Activo' %}<td>{{ (e.aplicaciones or '---') | replace('\n', '<br>') | safe }}</td>{% endif %}
+            {% elif categoria == 'APDS' %}
+                <td class="text-center">
+                    {% if e.preparado %}<span class="badge bg-success">PREPARADO</span>
+                    {% else %}<span class="badge bg-danger">PENDIENTE</span>{% endif %}
+                </td>
+            {% elif categoria == 'HP' and estado == 'Nuevos' %}
+                <td class="text-center">{{ e.id_inv_torre or '---' }}</td>
+                <td class="text-center text-muted">{{ e.ns_monitor or '---' }}</td>
+                <td class="text-center text-muted">{{ e.id_inv_monitor or '---' }}</td>
+                <td>{{ (e.aplicaciones or '---') | replace('\n', '<br>') | safe }}</td>
+            {% else %}
+                <td>{{ (e.id_inv_torre or '---') | replace('\n', '<br>') | safe }}</td>
+                <td>{{ (e.aplicaciones or '---') | replace('\n', '<br>') | safe }}</td>
+            {% endif %}
+            
+            <td class="text-muted small">{{ (e.anotaciones or '') | replace('\n', '<br>') | safe }}</td>
+            <td class="text-center actions-column">
+                <a href="{{ url_for('editar_equipo', id=e.id) }}" class="text-primary me-2"><i class="bi bi-pencil-square"></i></a>
+                <a href="{{ url_for('eliminar_equipo', id=e.id, sede=sede, categoria=categoria) }}" class="text-danger"><i class="bi bi-trash3"></i></a>
+            </td>
+        </tr>
+        {% endfor %}
+    {% endfor %}
+</tbody>
+            </table>
+        </div>
+    </div>
+
+<script>
+    document.getElementById('buscador').addEventListener('keyup', function() {
+        const term = this.value.toLowerCase();
+        const rows = Array.from(document.querySelectorAll('tbody tr.equipo-row'));
+        const groups = {};
+
+        // 1. Agrupar filas por ubicación
+        rows.forEach(row => {
+            const ubi = row.getAttribute('data-ubicacion');
+            if (!groups[ubi]) groups[ubi] = [];
+            groups[ubi].push(row);
+        });
+
+        let totalVisible = 0;
+
+        Object.values(groups).forEach(groupRows => {
+            let visibleCount = 0;
+            const originalFirstRow = groupRows.find(r => r.getAttribute('data-is-first') === 'true');
+            const aulaCell = originalFirstRow.querySelector('.aula-cell');
+            const nombreUbicacion = originalFirstRow.getAttribute('data-ubicacion').toLowerCase();
+
+            // 2. Determinar si la búsqueda coincide con el nombre del grupo (ej. "Dpto Tecno")
+            const matchGrupo = nombreUbicacion.includes(term) && term !== "";
+
+            // 3. Filtrar filas
+            groupRows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                
+                // Si coincide el texto de la fila O coincide el nombre del grupo entero
+                if (text.includes(term) || matchGrupo) {
+                    row.classList.remove('hidden-row');
+                    Array.from(row.children).forEach(td => td.style.visibility = '');
+                    visibleCount++;
+                    totalVisible++;
+                } else {
+                    row.classList.add('hidden-row');
+                }
+            });
+
+            // 4. Reconstrucción de la tabla
+            if (term === "") {
+                groupRows.forEach(row => {
+                    row.classList.remove('hidden-row');
+                    Array.from(row.children).forEach(td => td.style.visibility = '');
+                });
+                aulaCell.style.display = '';
+                aulaCell.rowSpan = aulaCell.getAttribute('data-original-rowspan');
+                totalVisible = rows.length;
+            } else {
+                if (visibleCount > 0) {
+                    aulaCell.style.display = '';
+                    aulaCell.rowSpan = visibleCount;
+
+                    // Si la fila maestra estaba oculta pero hay hijos visibles, la activamos solo para el Aula
+                    if (originalFirstRow.classList.contains('hidden-row')) {
+                        originalFirstRow.classList.remove('hidden-row');
+                        Array.from(originalFirstRow.children).forEach(td => {
+                            if (!td.classList.contains('aula-cell')) {
+                                td.style.visibility = 'collapse';
+                            } else {
+                                td.style.visibility = '';
+                            }
+                        });
+                        aulaCell.rowSpan = visibleCount + 1;
+                    }
+                } else {
+                    aulaCell.style.display = 'none';
+                }
+            }
+        });
+
+        document.getElementById('contador').innerText = totalVisible;
+    });
+
+    function imprimirTabla() {
+        window.print();
+    }
+</script>
+</body>
+</html>
