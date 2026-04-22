@@ -63,7 +63,7 @@
 
     .hidden-row { display: none !important; }
 
-    /* Estilos para los botones de ACCIONES */
+    /* --- ESTILOS PARA LOS BOTONES DE ACCIONES --- */
     .actions-column a {
         display: inline-block;
         padding: 5px;
@@ -72,48 +72,41 @@
         transition: transform 0.2s;
     }
     .actions-column a:hover { transform: scale(1.2); }
-    .btn-edit { color: #0d6efd !important; } /* Azul Bootstrap */
-    .btn-delete { color: #dc3545 !important; margin-left: 15px !important; } /* Rojo + Espaciado */
+    .btn-edit { color: #0d6efd !important; } 
+    .btn-delete { color: #dc3545 !important; margin-left: 15px !important; }
 
-    /* Estilo general para las etiquetas de estado */
+    /* --- ESTILOS PARA LAS ETIQUETAS (BADGES) --- */
     .badge {
         display: inline-block;
-        padding: 5px 12px;
-        font-size: 11px;
-        font-weight: 700;
-        line-height: 1;
-        text-align: center;
-        white-space: nowrap;
-        vertical-align: baseline;
+        padding: 6px 12px;
+        font-size: 10px;
+        font-weight: 800;
         border-radius: 50px;
+        text-transform: uppercase;
         letter-spacing: 0.5px;
-        width: 90px;
     }
 
-    .bg-success {
-        background-color: #d4edda !important;
-        color: #155724 !important;
-        border: 1px solid #c3e6cb;
+    /* Colores para la columna PANTALLA */
+    .badge-tv { 
+        background-color: #e3f2fd !important; /* Azul muy claro */
+        color: #0d47a1 !important;           /* Azul oscuro */
+        border: 1px solid #bbdefb;
+    }
+    
+    .badge-interactiva { 
+        background-color: #f3e5f5 !important; /* Morado muy claro */
+        color: #4a148c !important;           /* Morado oscuro */
+        border: 1px solid #e1bee7;
     }
 
-    .bg-danger {
-        background-color: #f8d7da !important;
-        color: #721c24 !important;
-        border: 1px solid #f5c6cb;
-    }
-
-    .bg-success::before, .bg-danger::before { content: "● "; font-size: 10px; margin-right: 3px; }
+    /* Colores para ESTADO (APDS) */
+    .bg-success { background-color: #d4edda !important; color: #155724 !important; border: 1px solid #c3e6cb; }
+    .bg-danger { background-color: #f8d7da !important; color: #721c24 !important; border: 1px solid #f5c6cb; }
 
     @media print {
         @page { size: landscape; margin: 0.5cm; }
         .header-buttons, .top-controls, .actions-column { display: none !important; }
-        .header-easd { justify-content: center !important; }
-        .header-title { position: static !important; transform: none !important; }
-        .table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
-        .table th, .table td { border: 1px solid #000 !important; font-size: 8.5pt !important; padding: 5px !important; }
-        .table thead th { background-color: #003366 !important; color: white !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
-        .aula-cell, .aula-cell span { color: #000 !important; background-color: transparent !important; font-weight: bold !important; border: none !important; box-shadow: none !important; }
-        * { text-shadow: none !important; box-shadow: none !important; }
+        .table thead th { background-color: #003366 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     }
 </style>
 </head>
@@ -131,11 +124,7 @@
         <div class="header-buttons">
             <button onclick="imprimirTabla()" class="btn-print" style="background-color: #28a745; color: white; border: none; border-radius: 50px; font-weight: bold; padding: 8px 20px; cursor: pointer;">IMPRIMIR</button>
             <a href="{{ url_for('formulario_nuevo', sede=sede, categoria=categoria, estado=estado) }}" class="btn-add">AÑADIR</a>
-            {% if categoria == 'APDS' %}
-                <a href="{{ url_for('ver_sede', nombre_sede=sede) }}" class="btn-back">VOLVER</a>
-            {% else %}
-                <a href="{{ url_for('ver_sede', nombre_sede=sede, cat=categoria) }}" class="btn-back">VOLVER</a>
-            {% endif %}
+            <a href="{{ url_for('ver_sede', nombre_sede=sede, cat=categoria) }}" class="btn-back">VOLVER</a>
         </div>
     </header>
 
@@ -157,7 +146,7 @@
                         <th style="width: 10%;">UBICACIÓN</th>
                         <th style="width: 15%;">Nº SERIE</th>
                         {% if categoria != 'APDS' %}
-                            <th style="width: 10%;">PANTALLA</th>
+                            <th style="width: 12%;">PANTALLA</th>
                         {% endif %}
 
                         {% if categoria == 'MACS' %}
@@ -194,11 +183,11 @@
                             {% if categoria != 'APDS' %}
                                 <td class="text-center">
                                     {% if e.preparado == 1 %}
-                                        <span class="badge bg-secondary">TV</span>
+                                        <span class="badge badge-tv"><i class="bi bi-tv me-1"></i> TV</span>
                                     {% elif e.preparado == 2 %}
-                                        <span class="badge bg-info text-dark">Interactiva</span>
+                                        <span class="badge badge-interactiva"><i class="bi bi-hand-index-thumb me-1"></i> INTERACTIVA</span>
                                     {% else %}
-                                        ---
+                                        <span class="text-muted small">---</span>
                                     {% endif %}
                                 </td>
                             {% endif %}
@@ -254,20 +243,17 @@
         });
 
         let totalVisible = 0;
-
         Object.values(groups).forEach(groupRows => {
             let visibleCount = 0;
             const originalFirstRow = groupRows[0];
             const aulaCell = originalFirstRow.querySelector('.aula-cell');
             const nombreUbicacion = originalFirstRow.getAttribute('data-ubicacion').toLowerCase();
-
             const matchGrupo = nombreUbicacion.includes(term) && term !== "";
 
             groupRows.forEach(row => {
                 const text = row.innerText.toLowerCase();
                 if (text.includes(term) || matchGrupo) {
                     row.classList.remove('hidden-row');
-                    Array.from(row.children).forEach(td => td.style.visibility = '');
                     visibleCount++;
                     totalVisible++;
                 } else {
@@ -276,10 +262,7 @@
             });
 
             if (term === "") {
-                groupRows.forEach(row => {
-                    row.classList.remove('hidden-row');
-                    Array.from(row.children).forEach(td => td.style.visibility = '');
-                });
+                groupRows.forEach(row => row.classList.remove('hidden-row'));
                 if(aulaCell) {
                     aulaCell.style.display = '';
                     aulaCell.rowSpan = groupRows.length;
@@ -296,7 +279,6 @@
                 }
             }
         });
-
         document.getElementById('contador').innerText = totalVisible;
     });
 
