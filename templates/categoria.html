@@ -63,19 +63,26 @@
 
     .hidden-row { display: none !important; }
 
-    /* --- ESTILOS PARA LOS BOTONES DE ACCIONES --- */
-    .actions-column a {
-        display: inline-block;
-        padding: 5px;
+    /* --- CAMBIO: CENTRADO DE ACCIONES --- */
+    .actions-column {
+        text-align: center !important;
+    }
+    .actions-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+    }
+    .actions-container a {
+        display: inline-flex;
         text-decoration: none;
         font-size: 1.1rem;
         transition: transform 0.2s;
     }
-    .actions-column a:hover { transform: scale(1.2); }
+    .actions-container a:hover { transform: scale(1.2); }
     .btn-edit { color: #0d6efd !important; } 
-    .btn-delete { color: #dc3545 !important; margin-left: 15px !important; }
+    .btn-delete { color: #dc3545 !important; }
 
-    /* --- ESTILOS PARA LAS ETIQUETAS (BADGES) --- */
     .badge {
         display: inline-block;
         padding: 6px 12px;
@@ -86,20 +93,8 @@
         letter-spacing: 0.5px;
     }
 
-    /* Colores para la columna PANTALLA */
-    .badge-tv { 
-        background-color: #e3f2fd !important; /* Azul muy claro */
-        color: #0d47a1 !important;           /* Azul oscuro */
-        border: 1px solid #bbdefb;
-    }
-    
-    .badge-interactiva { 
-        background-color: #f3e5f5 !important; /* Morado muy claro */
-        color: #4a148c !important;           /* Morado oscuro */
-        border: 1px solid #e1bee7;
-    }
-
-    /* Colores para ESTADO (APDS) */
+    .badge-tv { background-color: #e3f2fd !important; color: #0d47a1 !important; border: 1px solid #bbdefb; }
+    .badge-interactiva { background-color: #f3e5f5 !important; color: #4a148c !important; border: 1px solid #e1bee7; }
     .bg-success { background-color: #d4edda !important; color: #155724 !important; border: 1px solid #c3e6cb; }
     .bg-danger { background-color: #f8d7da !important; color: #721c24 !important; border: 1px solid #f5c6cb; }
 
@@ -118,8 +113,8 @@
             <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" style="max-height: 50px;">
         </div>
         <div class="header-title">
-            <h1>{{ categoria }}</h1>
-            <p class="m-0 fw-bold text-muted" style="font-size: 0.9rem;">{{ sede | upper }} | {{ estado | upper }}</p>
+            <h1 id="titulo-categoria">{{ categoria }}</h1>
+            <p id="titulo-sede" class="m-0 fw-bold text-muted" style="font-size: 0.9rem;">{{ sede | upper }} | {{ estado | upper }}</p>
         </div>
         <div class="header-buttons">
             <button onclick="imprimirTabla()" class="btn-print" style="background-color: #28a745; color: white; border: none; border-radius: 50px; font-weight: bold; padding: 8px 20px; cursor: pointer;">IMPRIMIR</button>
@@ -211,16 +206,19 @@
                             {% endif %}
                             
                             <td class="text-muted small">{{ (e.anotaciones or '') | replace('\n', '<br>') | safe }}</td>
-                            <td class="text-center actions-column">
-                                <a href="{{ url_for('editar_equipo', id=e.id) }}" class="btn-edit" title="Editar">
-                                    <i class="bi bi-pencil-square"></i>
-                                </a>
-                                <a href="{{ url_for('eliminar_equipo', id=e.id, sede=sede, categoria=categoria) }}" 
-                                   class="btn-delete" 
-                                   title="Eliminar"
-                                   onclick="return confirm('¿Seguro que quieres eliminar este equipo?')">
-                                    <i class="bi bi-trash3"></i>
-                                </a>
+                            
+                            <td class="actions-column">
+                                <div class="actions-container">
+                                    <a href="{{ url_for('editar_equipo', id=e.id) }}" class="btn-edit" title="Editar">
+                                        <i class="bi bi-pencil-square"></i>
+                                    </a>
+                                    <a href="{{ url_for('eliminar_equipo', id=e.id, sede=sede, categoria=categoria) }}" 
+                                       class="btn-delete" 
+                                       title="Eliminar"
+                                       onclick="return confirm('¿Seguro que quieres eliminar este equipo?')">
+                                        <i class="bi bi-trash3"></i>
+                                    </a>
+                                </div>
                             </td>
                         </tr>
                         {% endfor %}
@@ -231,6 +229,28 @@
     </div>
 
 <script>
+    // 1. MEMORIA POR CATEGORÍA
+    document.addEventListener('DOMContentLoaded', function() {
+        const cat = document.getElementById('titulo-categoria').innerText.trim().toLowerCase();
+        const sede = document.getElementById('titulo-sede').innerText.trim().toLowerCase();
+        const storageKey = ("config_" + sede + "_" + cat).replace(/[^a-z0-9]/gi, '_');
+
+        let config = JSON.parse(localStorage.getItem(storageKey));
+        if (!config) {
+            config = { 'col-ns': true, 'col-pan': true, 'col-inv-t': true, 'col-ns-m': true, 'col-inv-m': true, 'col-app': true, 'col-not': true };
+        }
+
+        function applyConfig() {
+            Object.keys(config).forEach(colClass => {
+                const isVisible = config[colClass];
+                const cells = document.querySelectorAll('.' + colClass);
+                cells.forEach(c => c.style.display = isVisible ? "" : "none");
+            });
+        }
+        applyConfig();
+    });
+
+    // 2. BUSCADOR (Original)
     document.getElementById('buscador').addEventListener('keyup', function() {
         const term = this.value.toLowerCase();
         const rows = Array.from(document.querySelectorAll('tbody tr.equipo-row'));
@@ -263,17 +283,11 @@
 
             if (term === "") {
                 groupRows.forEach(row => row.classList.remove('hidden-row'));
-                if(aulaCell) {
-                    aulaCell.style.display = '';
-                    aulaCell.rowSpan = groupRows.length;
-                }
+                if(aulaCell) { aulaCell.style.display = ''; aulaCell.rowSpan = groupRows.length; }
                 totalVisible = rows.length;
             } else {
                 if (visibleCount > 0) {
-                    if(aulaCell) {
-                        aulaCell.style.display = '';
-                        aulaCell.rowSpan = visibleCount;
-                    }
+                    if(aulaCell) { aulaCell.style.display = ''; aulaCell.rowSpan = visibleCount; }
                 } else {
                     if(aulaCell) aulaCell.style.display = 'none';
                 }
