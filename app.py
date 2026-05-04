@@ -16,39 +16,40 @@ def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
 
-# --- FUNCIÓN DE AYUDA PARA EL ORDENAMIENTO PERSONALIZADO ---
+# --- FUNCIÓN DE AYUDA PARA EL ORDENAMIENTO PERSONALIZADO (CORREGIDA) ---
 def obtener_prioridad(ubicacion):
     if not ubicacion:
         return (5, "")
     
-    ubi = str(ubicacion).upper().strip()
+    # Limpiamos: pasamos a mayúsculas y quitamos la palabra "AULA" para comparar solo el número
+    # Esto soluciona el problema de la imagen: "Aula 1.10" se convierte en "1.10"
+    ubi_limpia = str(ubicacion).upper().replace("AULA", "").strip()
     
-    # 1. Aulas numéricas (ej: 1.0 hasta 1.11, 2.0 hasta 2.11)
-    match_num = re.match(r"(\d+)\.(\d+)", ubi)
+    # 1. Aulas numéricas (ej: 1.0, 1.1, 1.10, 2.0...)
+    match_num = re.match(r"(\d+)\.(\d+)", ubi_limpia)
     if match_num:
         piso = int(match_num.group(1))
         aula = int(match_num.group(2))
-        return (1, piso, aula) # Prioridad 1
+        return (1, piso, aula) # Al ser enteros, 10 irá después de 2
     
     # 2. Aulas B (ej: B1, B2, B3)
-    if ubi.startswith('B'):
-        num_b = re.search(r'\d+', ubi)
+    if ubi_limpia.startswith('B'):
+        num_b = re.search(r'\d+', ubi_limpia)
         val = int(num_b.group()) if num_b else 0
-        return (2, val) # Prioridad 2
+        return (2, val)
         
     # 3. Aulas S (ej: S0, S1, S2, S3, S4)
-    if ubi.startswith('S'):
-        num_s = re.search(r'\d+', ubi)
+    if ubi_limpia.startswith('S'):
+        num_s = re.search(r'\d+', ubi_limpia)
         val = int(num_s.group()) if num_s else 0
-        return (3, val) # Prioridad 3
+        return (3, val)
         
-    # 4. Departamentos y el resto (Cualquier otro nombre)
-    return (4, ubi) # Prioridad 4
+    # 4. Departamentos y el resto
+    return (4, ubi_limpia)
 
 def init_db():
     conn = get_db_connection()
     cur = conn.cursor()
-    # SQL optimizado para PostgreSQL
     cur.execute('''
         CREATE TABLE IF NOT EXISTS equipos (
             id SERIAL PRIMARY KEY,
@@ -69,7 +70,6 @@ def init_db():
     cur.close()
     conn.close()
 
-# Inicializa la base de datos al arrancar
 if DATABASE_URL:
     init_db()
 
@@ -100,7 +100,6 @@ def ver_sede(nombre_sede):
         estado = 'Activo'
 
     conn = get_db_connection()
-    # Usamos RealDictCursor para que se comporte como el Row de sqlite3
     cur = conn.cursor(cursor_factory=RealDictCursor)
     cur.execute('''
         SELECT * FROM equipos 
@@ -110,7 +109,7 @@ def ver_sede(nombre_sede):
     cur.close()
     conn.close()
     
-    # --- APLICAR ORDENAMIENTO ANTES DE ENVIAR AL HTML ---
+    # --- ORDENAMIENTO LÓGICO ---
     equipos_ordenados = sorted(equipos_db, key=lambda x: obtener_prioridad(x['ubicacion']))
     
     return render_template('categoria.html', 
@@ -121,16 +120,9 @@ def ver_sede(nombre_sede):
 def formulario_nuevo(sede, categoria):
     estado_defecto = request.args.get('estado', 'Activo')
     ultima_ubicacion = request.args.get('last_ub', '')
-    
     if categoria == 'APDS':
         estado_defecto = 'Retirada'
-        
-    return render_template('nuevo_registro.html', 
-                           sede=sede, 
-                           categoria=categoria, 
-                           equipo=None, 
-                           estado=estado_defecto,
-                           last_ub=ultima_ubicacion)
+    return render_template('nuevo_registro.html', sede=sede, categoria=categoria, equipo=None, estado=estado_defecto, last_ub=ultima_ubicacion)
 
 @app.route('/agregar_equipo', methods=['POST'])
 def agregar_equipo():
@@ -138,38 +130,24 @@ def agregar_equipo():
     categoria = request.form['categoria']
     ubicacion = request.form['ubicacion'].strip()
     estado = request.form.get('estado', 'Activo')
-    
     if categoria == 'APDS':
         estado = 'Retirada'
         valor_preparado = 1 if request.form.get('preparado') else 0
     else:
         valor_preparado = int(request.form.get('tipo_pantalla', 0))
-    
     try:
         conn = get_db_connection()
         cur = conn.cursor()
         cur.execute('''
-            INSERT INTO equipos (
-                sede, categoria, ubicacion, ns_torre, id_inv_torre, 
-                ns_monitor, id_inv_monitor, aplicaciones, anotaciones, 
-                estado, preparado
-            )
+            INSERT INTO equipos (sede, categoria, ubicacion, ns_torre, id_inv_torre, ns_monitor, id_inv_monitor, aplicaciones, anotaciones, estado, preparado)
             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
-        ''', (sede, categoria, ubicacion, 
-              request.form.get('ns_torre', '').strip(), 
-              request.form.get('id_inv_torre', '').strip(), 
-              request.form.get('ns_monitor', '').strip(), 
-              request.form.get('id_inv_monitor', '').strip(), 
-              request.form.get('aplicaciones', '').strip(), 
-              request.form.get('anotaciones', '').strip(), 
-              estado, valor_preparado))
+        ''', (sede, categoria, ubicacion, request.form.get('ns_torre', '').strip(), request.form.get('id_inv_torre', '').strip(), request.form.get('ns_monitor', '').strip(), request.form.get('id_inv_monitor', '').strip(), request.form.get('aplicaciones', '').strip(), request.form.get('anotaciones', '').strip(), estado, valor_preparado))
         conn.commit()
         cur.close()
         conn.close()
         flash(f"¡Guardado con éxito!")
     except Exception as e:
         flash(f"Error al guardar: {str(e)}")
-
     return redirect(url_for('formulario_nuevo', sede=sede, categoria=categoria, estado=estado, last_ub=ubicacion))
 
 @app.route('/editar_equipo/<int:id>')
@@ -180,11 +158,7 @@ def editar_equipo(id):
     equipo = cur.fetchone()
     cur.close()
     conn.close()
-    return render_template('nuevo_registro.html', 
-                           equipo=equipo, 
-                           sede=equipo['sede'], 
-                           categoria=equipo['categoria'], 
-                           estado=equipo['estado'])
+    return render_template('nuevo_registro.html', equipo=equipo, sede=equipo['sede'], categoria=equipo['categoria'], estado=equipo['estado'])
 
 @app.route('/actualizar_equipo', methods=['POST'])
 def actualizar_equipo():
@@ -192,32 +166,16 @@ def actualizar_equipo():
     sede = request.form['sede']
     categoria = request.form['categoria']
     estado = request.form.get('estado', 'Activo')
-
-    if categoria == 'APDS':
-        valor_preparado = 1 if request.form.get('preparado') else 0
-    else:
-        valor_preparado = int(request.form.get('tipo_pantalla', 0))
-    
+    valor_preparado = 1 if (categoria == 'APDS' and request.form.get('preparado')) else int(request.form.get('tipo_pantalla', 0))
     conn = get_db_connection()
     cur = conn.cursor()
     cur.execute('''
-        UPDATE equipos SET 
-            ubicacion = %s, ns_torre = %s, id_inv_torre = %s, 
-            ns_monitor = %s, id_inv_monitor = %s, 
-            aplicaciones = %s, anotaciones = %s, estado = %s, preparado = %s
+        UPDATE equipos SET ubicacion = %s, ns_torre = %s, id_inv_torre = %s, ns_monitor = %s, id_inv_monitor = %s, aplicaciones = %s, anotaciones = %s, estado = %s, preparado = %s
         WHERE id = %s
-    ''', (request.form['ubicacion'].strip(), 
-          request.form.get('ns_torre', '').strip(), 
-          request.form.get('id_inv_torre', '').strip(), 
-          request.form.get('ns_monitor', '').strip(), 
-          request.form.get('id_inv_monitor', '').strip(), 
-          request.form.get('aplicaciones', '').strip(), 
-          request.form.get('anotaciones', '').strip(), 
-          estado, valor_preparado, id_equipo))
+    ''', (request.form['ubicacion'].strip(), request.form.get('ns_torre', '').strip(), request.form.get('id_inv_torre', '').strip(), request.form.get('ns_monitor', '').strip(), request.form.get('id_inv_monitor', '').strip(), request.form.get('aplicaciones', '').strip(), request.form.get('anotaciones', '').strip(), estado, valor_preparado, id_equipo))
     conn.commit()
     cur.close()
     conn.close()
-    
     return redirect(url_for('ver_sede', nombre_sede=sede, cat=categoria, estado=estado))
 
 @app.route('/eliminar_equipo/<int:id>/<sede>/<categoria>')
@@ -234,6 +192,5 @@ def eliminar_equipo(id, sede, categoria):
     return redirect(url_for('ver_sede', nombre_sede=sede, cat=categoria, estado=estado))
 
 if __name__ == '__main__':
-    # Importante para Render: el puerto se toma del entorno
     port = int(os.environ.get("PORT", 5000))
     app.run(host='0.0.0.0', port=port)
