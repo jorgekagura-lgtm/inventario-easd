@@ -1,5 +1,6 @@
 import os
 import psycopg2
+import re  # Necesario para el ordenamiento avanzado
 from psycopg2.extras import RealDictCursor
 from flask import Flask, render_template, request, redirect, url_for, flash
 
@@ -8,13 +9,41 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("SECRET_KEY", "clave_segura_por_defecto")
 
 # CONFIGURACIÓN DE BASE DE DATOS (Neon)
-# En Render, crearemos una variable de entorno llamada DATABASE_URL
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 def get_db_connection():
     # Nos conectamos a Neon usando la URL
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
+
+# --- FUNCIÓN DE AYUDA PARA EL ORDENAMIENTO PERSONALIZADO ---
+def obtener_prioridad(ubicacion):
+    if not ubicacion:
+        return (5, "")
+    
+    ubi = str(ubicacion).upper().strip()
+    
+    # 1. Aulas numéricas (ej: 1.0 hasta 1.11, 2.0 hasta 2.11)
+    match_num = re.match(r"(\d+)\.(\d+)", ubi)
+    if match_num:
+        piso = int(match_num.group(1))
+        aula = int(match_num.group(2))
+        return (1, piso, aula) # Prioridad 1
+    
+    # 2. Aulas B (ej: B1, B2, B3)
+    if ubi.startswith('B'):
+        num_b = re.search(r'\d+', ubi)
+        val = int(num_b.group()) if num_b else 0
+        return (2, val) # Prioridad 2
+        
+    # 3. Aulas S (ej: S0, S1, S2, S3, S4)
+    if ubi.startswith('S'):
+        num_s = re.search(r'\d+', ubi)
+        val = int(num_s.group()) if num_s else 0
+        return (3, val) # Prioridad 3
+        
+    # 4. Departamentos y el resto (Cualquier otro nombre)
+    return (4, ubi) # Prioridad 4
 
 def init_db():
     conn = get_db_connection()
@@ -76,14 +105,16 @@ def ver_sede(nombre_sede):
     cur.execute('''
         SELECT * FROM equipos 
         WHERE sede = %s AND categoria = %s AND estado = %s
-        ORDER BY ubicacion ASC, id ASC
     ''', (nombre_sede, categoria, estado))
     equipos_db = cur.fetchall()
     cur.close()
     conn.close()
     
+    # --- APLICAR ORDENAMIENTO ANTES DE ENVIAR AL HTML ---
+    equipos_ordenados = sorted(equipos_db, key=lambda x: obtener_prioridad(x['ubicacion']))
+    
     return render_template('categoria.html', 
-                           sede=nombre_sede, equipos=equipos_db, 
+                           sede=nombre_sede, equipos=equipos_ordenados, 
                            categoria=categoria, estado=estado)
 
 @app.route('/formulario/<sede>/<categoria>')
