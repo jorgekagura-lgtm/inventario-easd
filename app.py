@@ -16,25 +16,25 @@ def get_db_connection():
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
 
-# --- FUNCIÓN DE AYUDA PARA EL ORDENAMIENTO PERSONALIZADO (CORREGIDA) ---
+# --- FUNCIÓN DE AYUDA PARA EL ORDENAMIENTO PERSONALIZADO (CORREGIDA Y SIN ERRORES) ---
 def obtener_prioridad(ubicacion):
     if not ubicacion:
         return (5, "")
     
     ubi_texto = str(ubicacion).upper().strip()
     
-    # 1. BUSCADOR DE NÚMEROS DE AULA (Blindado)
-    # Esta expresión busca cualquier patrón de "Número.Número" ignore lo que haya antes o después
+    # 1. BUSCADOR DE NÚMEROS DE AULA (Blindado para 1.10 > 1.2)
+    # Busca cualquier patrón de "Número.Número" ignore lo que haya antes o después
     match_num = re.search(r"(\d+)\.(\d+)", ubi_texto)
     if match_num:
         piso = int(match_num.group(1))
         aula = int(match_num.group(2))
-        return (1, piso, aula) # Aquí 10 siempre será mayor que 2
+        return (1, piso, aula) # Al ser números enteros, 10 es mayor que 2
     
-    # 2. Aulas B
+    # 2. Aulas B (Corregido el error de variable num_b)
     if 'B' in ubi_texto:
         num_b = re.search(r'\d+', ubi_texto)
-        val = int(num_s.group()) if num_b else 0
+        val = int(num_b.group()) if num_b else 0
         return (2, val)
         
     # 3. Aulas S
@@ -109,6 +109,7 @@ def ver_sede(nombre_sede):
     conn.close()
     
     # --- ORDENAMIENTO LÓGICO ---
+    # Esto asegura que Aula 1.10 aparezca después de Aula 1.9
     equipos_ordenados = sorted(equipos_db, key=lambda x: obtener_prioridad(x['ubicacion']))
     
     return render_template('categoria.html', 
