@@ -31,10 +31,10 @@ def obtener_prioridad(ubicacion):
         aula = int(match_num.group(2))
         return (1, piso, aula) # Al ser números enteros, 10 es mayor que 2
     
-    # 2. Aulas B (Corregido el error de variable num_b)
+# 2. Aulas B 
     if 'B' in ubi_texto:
         num_b = re.search(r'\d+', ubi_texto)
-        val = int(num_b.group()) if num_b else 0
+        val = int(num_b.group()) if num_b else 0  # <--- DEBE DECIR num_b
         return (2, val)
         
     # 3. Aulas S
