@@ -63,7 +63,6 @@
 
     .hidden-row { display: none !important; }
 
-    /* --- CAMBIO: CENTRADO DE ACCIONES --- */
     .actions-column {
         text-align: center !important;
     }
@@ -119,7 +118,12 @@
         <div class="header-buttons">
             <button onclick="imprimirTabla()" class="btn-print" style="background-color: #28a745; color: white; border: none; border-radius: 50px; font-weight: bold; padding: 8px 20px; cursor: pointer;">IMPRIMIR</button>
             <a href="{{ url_for('formulario_nuevo', sede=sede, categoria=categoria, estado=estado) }}" class="btn-add">AÑADIR</a>
-            <a href="{{ url_for('ver_sede', nombre_sede=sede) }}" class="btn-back">VOLVER</a>
+            
+            {% if categoria == 'APDS' %}
+                <a href="{{ url_for('ver_sede', nombre_sede=sede) }}" class="btn-back">VOLVER</a>
+            {% else %}
+                <a href="{{ url_for('ver_sede', nombre_sede=sede, cat=categoria) }}" class="btn-back">VOLVER</a>
+            {% endif %}
         </div>
     </header>
 
@@ -216,7 +220,7 @@
                                        class="btn-delete" 
                                        title="Eliminar"
                                        onclick="return confirm('¿Seguro que quieres eliminar este equipo?')">
-                                        <i class="bi bi-trash3"></i>
+                                         <i class="bi bi-trash3"></i>
                                     </a>
                                 </div>
                             </td>
@@ -229,7 +233,6 @@
     </div>
 
 <script>
-    // 1. MEMORIA POR CATEGORÍA
     document.addEventListener('DOMContentLoaded', function() {
         const cat = document.getElementById('titulo-categoria').innerText.trim().toLowerCase();
         const sede = document.getElementById('titulo-sede').innerText.trim().toLowerCase();
@@ -250,7 +253,6 @@
         applyConfig();
     });
 
-    // 2. BUSCADOR (Original)
     document.getElementById('buscador').addEventListener('keyup', function() {
         const term = this.value.toLowerCase();
         const rows = Array.from(document.querySelectorAll('tbody tr.equipo-row'));
