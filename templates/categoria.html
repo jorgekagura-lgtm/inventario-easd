@@ -144,7 +144,9 @@
                     <tr>
                         <th style="width: 10%;">UBICACIÓN</th>
                         <th style="width: 15%;">Nº SERIE</th>
-                        {% if categoria != 'APDS' %}
+                        
+                        {# Ocultar columna pantalla si es APDS O si es MACS Retirar #}
+                        {% if categoria != 'APDS' and not (categoria == 'MACS' and estado == 'Retirar') %}
                             <th style="width: 12%;">PANTALLA</th>
                         {% endif %}
 
@@ -179,7 +181,8 @@
                             
                             <td class="fw-bold text-center">{{ e.ns_torre or '---' }}</td>
 
-                            {% if categoria != 'APDS' %}
+                            {# Lógica para mostrar o no la celda de pantalla #}
+                            {% if categoria != 'APDS' and not (categoria == 'MACS' and estado == 'Retirar') %}
                                 <td class="text-center">
                                     {% if e.preparado == 1 %}
                                         <span class="badge badge-tv"><i class="bi bi-tv me-1"></i> TV</span>
