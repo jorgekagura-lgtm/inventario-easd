@@ -78,7 +78,6 @@
             text-align: center; 
         }
 
-        /* Corregir alineación del texto en el select para que coincida con el input */
         .form-select { text-align-last: center; }
 
         .form-section-title { 
@@ -165,8 +164,8 @@
 
     <p class="form-section-title"><span>DATOS TÉCNICOS</span></p>
 
-    {# Selector de Pantalla para todos menos APDS #}
-    {% if categoria != 'APDS' %}
+    {# Se oculta si es APDS O si es MACS para retirar #}
+    {% if categoria != 'APDS' and not (categoria == 'MACS' and estado == 'Retirar') %}
     <div class="form-group-custom">
         <label class="form-label">PANTALLA (TV / Interactiva)</label>
         <select name="tipo_pantalla" class="form-select">
@@ -195,7 +194,6 @@
             </div>
         </div>
     {% elif categoria == 'HP' and estado == 'Nuevos' %}
-        {# Solo para HP Nuevos #}
         <div class="form-group-custom">
             <label class="form-label">ID INV. TORRE</label>
             <input type="text" name="id_inv_torre" class="form-control" value="{{ equipo.id_inv_torre if equipo else '' }}">
@@ -213,7 +211,6 @@
             <textarea name="aplicaciones" class="form-control" rows="2">{{ equipo.aplicaciones if equipo else '' }}</textarea>
         </div>
     {% else %}
-        {# Para HP Viejos y Otros #}
         <div class="form-group-custom">
             <label class="form-label">CARACTERÍSTICAS / ID INV.</label>
             <textarea name="id_inv_torre" class="form-control" rows="2">{{ equipo.id_inv_torre if equipo else '' }}</textarea>
