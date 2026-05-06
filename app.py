@@ -5,45 +5,36 @@ from psycopg2.extras import RealDictCursor
 from flask import Flask, render_template, request, redirect, url_for, flash
 
 app = Flask(__name__)
-# Render necesita una clave secreta. Si no existe en el entorno, usa una por defecto
 app.secret_key = os.environ.get("SECRET_KEY", "clave_segura_por_defecto")
 
-# CONFIGURACIÓN DE BASE DE DATOS (Neon)
 DATABASE_URL = os.environ.get('DATABASE_URL')
 
 def get_db_connection():
-    # Nos conectamos a Neon usando la URL
     conn = psycopg2.connect(DATABASE_URL, sslmode='require')
     return conn
 
-# --- FUNCIÓN DE AYUDA PARA EL ORDENAMIENTO PERSONALIZADO (CORREGIDA Y SIN ERRORES) ---
 def obtener_prioridad(ubicacion):
     if not ubicacion:
         return (5, "")
     
     ubi_texto = str(ubicacion).upper().strip()
     
-    # 1. BUSCADOR DE NÚMEROS DE AULA (Blindado para 1.10 > 1.2)
-    # Busca cualquier patrón de "Número.Número" ignore lo que haya antes o después
     match_num = re.search(r"(\d+)\.(\d+)", ubi_texto)
     if match_num:
         piso = int(match_num.group(1))
         aula = int(match_num.group(2))
-        return (1, piso, aula) # Al ser números enteros, 10 es mayor que 2
+        return (1, piso, aula)
     
-# 2. Aulas B 
     if 'B' in ubi_texto:
         num_b = re.search(r'\d+', ubi_texto)
-        val = int(num_b.group()) if num_b else 0  # <--- DEBE DECIR num_b
+        val = int(num_b.group()) if num_b else 0
         return (2, val)
         
-    # 3. Aulas S
     if 'S' in ubi_texto:
         num_s = re.search(r'\d+', ubi_texto)
         val = int(num_s.group()) if num_s else 0
         return (3, val)
         
-    # 4. Departamentos y el resto
     return (4, ubi_texto)
 
 def init_db():
@@ -108,8 +99,6 @@ def ver_sede(nombre_sede):
     cur.close()
     conn.close()
     
-    # --- ORDENAMIENTO LÓGICO ---
-    # Esto asegura que Aula 1.10 aparezca después de Aula 1.9
     equipos_ordenados = sorted(equipos_db, key=lambda x: obtener_prioridad(x['ubicacion']))
     
     return render_template('categoria.html', 
