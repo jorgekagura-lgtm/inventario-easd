@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css">
     
     <style>
-        :root { --easd-blue: #003366; --easd-bg: #a8a8a8;  }
+        :root { --easd-blue: #003366; --easd-bg: #a8a8a8; --easd-orange: #ff5023; }
         body { background-color: var(--easd-bg); margin: 0; font-family: sans-serif; }
 
         .header-bar {
@@ -47,6 +47,37 @@
         .card-cat:hover { transform: translateY(-10px); background: var(--easd-blue); color: white; }
         .card-cat i { font-size: 3.5rem; margin-bottom: 10px; display: block; }
         .card-cat span { font-weight: 800; text-transform: uppercase; }
+
+        /* Estilo para el nuevo botón de Ver Todo */
+        .container-todo {
+            display: flex;
+            justify-content: center;
+            margin-top: 40px;
+            padding-bottom: 50px;
+        }
+
+        .btn-todo {
+            background: white;
+            color: var(--easd-blue);
+            padding: 15px 40px;
+            border-radius: 12px;
+            text-decoration: none;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: 0.3s;
+            border-bottom: 4px solid var(--easd-orange);
+        }
+
+        .btn-todo:hover {
+            background: var(--easd-blue);
+            color: white;
+            transform: scale(1.05);
+        }
+
+        .btn-todo i { font-size: 1.5rem; }
     </style>
 </head>
 <body>
@@ -67,23 +98,30 @@
         </div>
     </header>
 
-<main class="grid-categorias">
-    <a href="/sede/{{ sede }}?cat=HP" class="card-cat">
-        <i class="bi bi-pc"></i><span>HP</span>
-    </a>
-    
-    <a href="/sede/{{ sede }}?cat=MACS" class="card-cat">
-        <i class="bi bi-apple"></i><span>Mac</span>
-    </a>
-    
-    <a href="/sede/{{ sede }}?cat=APDS" class="card-cat">
-        <i class="bi bi-router"></i><span>Apd</span>
-    </a>
+    <main class="grid-categorias">
+        <a href="/sede/{{ sede }}?cat=HP" class="card-cat">
+            <i class="bi bi-pc"></i><span>HP</span>
+        </a>
+        
+        <a href="/sede/{{ sede }}?cat=MACS" class="card-cat">
+            <i class="bi bi-apple"></i><span>Mac</span>
+        </a>
+        
+        <a href="/sede/{{ sede }}?cat=APDS" class="card-cat">
+            <i class="bi bi-router"></i><span>Apd</span>
+        </a>
+        
+        <a href="/sede/{{ sede }}?cat=OTROS" class="card-cat">
+            <i class="bi bi-device-hdd"></i><span>Otros</span>
+        </a>
+    </main>
 
-    <a href="/sede/{{ sede }}?cat=OTROS" class="card-cat">
-        <i class="bi bi-device-hdd"></i><span>Otros</span>
-    </a>
-</main>
+    <div class="container-todo">
+        <a href="{{ url_for('ver_todos', nombre_sede=sede) }}" class="btn-todo">
+            <i class="bi bi-grid-3x3-gap-fill"></i>
+            <span>VER TODO EL INVENTARIO DE {{ sede | upper }}</span>
+        </a>
+    </div>
 
 </body>
 </html>
