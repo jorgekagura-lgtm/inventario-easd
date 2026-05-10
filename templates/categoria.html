@@ -46,12 +46,13 @@
     .main-content { padding: 0 40px 40px; }
     .card-table { background: white; border-radius: 15px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); width: 100%; overflow: hidden; }
 
-    .table { margin-bottom: 0; width: 100%; border-collapse: collapse; }
+    .table { margin-bottom: 0; width: 100%; border-collapse: collapse; table-layout: fixed; }
     .table thead { background-color: var(--easd-blue); color: white; }
     .table thead th { padding: 15px; border: 1px solid rgba(255,255,255,0.2); font-size: 0.8rem; text-align: center; text-transform: uppercase; }
     
-    .table td { border: 1px solid #ccc !important; padding: 12px; vertical-align: middle; }
+    .table td { border: 1px solid #ccc !important; padding: 12px; vertical-align: middle; word-wrap: break-word; }
 
+    /* ESTILOS CORREGIDOS PARA LA UBICACIÓN */
     .aula-cell { 
         background-color: #f1f5f9 !important; 
         text-align: center; 
@@ -59,39 +60,31 @@
         border-right: 4px solid var(--easd-blue) !important; 
     }
 
-    .aula-tag { background: var(--easd-blue); color: white; padding: 6px 12px; border-radius: 8px; font-size: 0.85rem; font-weight: bold; display: inline-block; }
+    .aula-tag { 
+        background: var(--easd-blue); 
+        color: white; 
+        padding: 6px 12px; 
+        border-radius: 8px; 
+        font-size: 0.85rem; 
+        font-weight: bold; 
+        display: none; /* Se oculta por defecto */
+    }
+
+    /* Solo mostramos el tag en la fila que tiene la clase 'first-visible' */
+    .first-visible .aula-tag {
+        display: inline-block !important;
+    }
 
     .hidden-row { display: none !important; }
 
-    .actions-column {
-        text-align: center !important;
-    }
-    .actions-container {
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        gap: 30px;
-    }
-    .actions-container a {
-        display: inline-flex;
-        text-decoration: none;
-        font-size: 1.1rem;
-        transition: transform 0.2s;
-    }
+    .actions-column { text-align: center !important; }
+    .actions-container { display: flex; justify-content: center; align-items: center; gap: 20px; }
+    .actions-container a { text-decoration: none; font-size: 1.1rem; transition: transform 0.2s; }
     .actions-container a:hover { transform: scale(1.2); }
     .btn-edit { color: #0d6efd !important; } 
     .btn-delete { color: #dc3545 !important; }
 
-    .badge {
-        display: inline-block;
-        padding: 6px 12px;
-        font-size: 10px;
-        font-weight: 800;
-        border-radius: 50px;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-
+    .badge { display: inline-block; padding: 6px 12px; font-size: 10px; font-weight: 800; border-radius: 50px; text-transform: uppercase; }
     .badge-tv { background-color: #e3f2fd !important; color: #0d47a1 !important; border: 1px solid #bbdefb; }
     .badge-interactiva { background-color: #f3e5f5 !important; color: #4a148c !important; border: 1px solid #e1bee7; }
     .bg-success { background-color: #d4edda !important; color: #155724 !important; border: 1px solid #c3e6cb; }
@@ -101,6 +94,7 @@
         @page { size: landscape; margin: 0.5cm; }
         .header-buttons, .top-controls, .actions-column { display: none !important; }
         .table thead th { background-color: #003366 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+        .aula-tag { display: inline-block !important; } /* En impresión mostramos todos para evitar huecos */
     }
 </style>
 </head>
@@ -142,12 +136,11 @@
             <table class="table" id="tablaEquipos">
                 <thead>
                     <tr>
-                        <th style="width: 10%;">UBICACIÓN</th>
-                        <th style="width: 15%;">Nº SERIE</th>
+                        <th style="width: 130px;">UBICACIÓN</th>
+                        <th style="width: 160px;">Nº SERIE</th>
                         
-                        {# Ocultar columna pantalla si es APDS O si es MACS Retirar #}
                         {% if categoria != 'APDS' and not (categoria == 'MACS' and estado == 'Retirar') %}
-                            <th style="width: 12%;">PANTALLA</th>
+                            <th style="width: 140px;">PANTALLA</th>
                         {% endif %}
 
                         {% if categoria == 'MACS' %}
@@ -165,23 +158,20 @@
                             <th>PROGRAMAS</th>
                         {% endif %}
                         <th>ANOTACIONES</th>
-                        <th class="actions-column">ACCIONES</th>
+                        <th class="actions-column" style="width: 100px;">ACCIONES</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% set grupos = equipos|groupby('ubicacion') %}
                     {% for ubicacion, lista_equipos in grupos %}
                         {% for e in lista_equipos %}
-                        <tr class="equipo-row" data-ubicacion="{{ ubicacion }}">
-                            {% if loop.first %}
-                            <td class="aula-cell" rowspan="{{ lista_equipos|length }}">
+                        <tr class="equipo-row {% if loop.first %}first-visible{% endif %}" data-ubicacion="{{ ubicacion }}">
+                            <td class="aula-cell">
                                 <span class="aula-tag">{{ ubicacion }}</span>
                             </td>
-                            {% endif %}
                             
                             <td class="fw-bold text-center">{{ e.ns_torre or '---' }}</td>
 
-                            {# Lógica para mostrar o no la celda de pantalla #}
                             {% if categoria != 'APDS' and not (categoria == 'MACS' and estado == 'Retirar') %}
                                 <td class="text-center">
                                     {% if e.preparado == 1 %}
@@ -236,66 +226,32 @@
     </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        const cat = document.getElementById('titulo-categoria').innerText.trim().toLowerCase();
-        const sede = document.getElementById('titulo-sede').innerText.trim().toLowerCase();
-        const storageKey = ("config_" + sede + "_" + cat).replace(/[^a-z0-9]/gi, '_');
-
-        let config = JSON.parse(localStorage.getItem(storageKey));
-        if (!config) {
-            config = { 'col-ns': true, 'col-pan': true, 'col-inv-t': true, 'col-ns-m': true, 'col-inv-m': true, 'col-app': true, 'col-not': true };
-        }
-
-        function applyConfig() {
-            Object.keys(config).forEach(colClass => {
-                const isVisible = config[colClass];
-                const cells = document.querySelectorAll('.' + colClass);
-                cells.forEach(c => c.style.display = isVisible ? "" : "none");
-            });
-        }
-        applyConfig();
-    });
-
+    // Lógica del buscador mejorada para evitar desajustes
     document.getElementById('buscador').addEventListener('keyup', function() {
         const term = this.value.toLowerCase();
-        const rows = Array.from(document.querySelectorAll('tbody tr.equipo-row'));
-        const groups = {};
+        const rows = document.querySelectorAll('tbody tr.equipo-row');
+        let totalVisible = 0;
+        let lastUbiVisible = "";
 
         rows.forEach(row => {
-            const ubi = row.getAttribute('data-ubicacion');
-            if (!groups[ubi]) groups[ubi] = [];
-            groups[ubi].push(row);
-        });
+            const text = row.innerText.toLowerCase();
+            const ubi = row.getAttribute('data-ubicacion').toLowerCase();
+            
+            // Quitamos la marca de "primera fila visible"
+            row.classList.remove('first-visible');
 
-        let totalVisible = 0;
-        Object.values(groups).forEach(groupRows => {
-            let visibleCount = 0;
-            const originalFirstRow = groupRows[0];
-            const aulaCell = originalFirstRow.querySelector('.aula-cell');
-            const nombreUbicacion = originalFirstRow.getAttribute('data-ubicacion').toLowerCase();
-            const matchGrupo = nombreUbicacion.includes(term) && term !== "";
+            if (text.includes(term) || ubi.includes(term)) {
+                row.classList.remove('hidden-row');
+                totalVisible++;
 
-            groupRows.forEach(row => {
-                const text = row.innerText.toLowerCase();
-                if (text.includes(term) || matchGrupo) {
-                    row.classList.remove('hidden-row');
-                    visibleCount++;
-                    totalVisible++;
-                } else {
-                    row.classList.add('hidden-row');
+                // Lógica para mostrar el nombre del aula solo en la primera fila visible de cada grupo
+                let currentUbi = row.getAttribute('data-ubicacion');
+                if (currentUbi !== lastUbiVisible) {
+                    row.classList.add('first-visible');
+                    lastUbiVisible = currentUbi;
                 }
-            });
-
-            if (term === "") {
-                groupRows.forEach(row => row.classList.remove('hidden-row'));
-                if(aulaCell) { aulaCell.style.display = ''; aulaCell.rowSpan = groupRows.length; }
-                totalVisible = rows.length;
             } else {
-                if (visibleCount > 0) {
-                    if(aulaCell) { aulaCell.style.display = ''; aulaCell.rowSpan = visibleCount; }
-                } else {
-                    if(aulaCell) aulaCell.style.display = 'none';
-                }
+                row.classList.add('hidden-row');
             }
         });
         document.getElementById('contador').innerText = totalVisible;
