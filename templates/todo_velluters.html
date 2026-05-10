@@ -138,6 +138,9 @@
 
 <div class="search-box-container">
     <input type="text" id="masterSearch" class="search-input" placeholder="🔍 Buscar por Aula, Nº Serie, Categoría, Software, ID Inventario...">
+    <div id="globalCounter" class="ms-3 shadow-sm" style="display: none; background: var(--easd-orange); color: white; padding: 10px 20px; border-radius: 50px; font-weight: 800; min-width: 120px; text-align: center;">
+        TOTAL: <span id="totalMatches">0</span>
+    </div>
 </div>
 
 <div id="content-area">
@@ -226,34 +229,34 @@
 document.getElementById('masterSearch').addEventListener('keyup', function() {
     const term = this.value.trim().toLowerCase();
     const sections = document.querySelectorAll('.section-to-filter');
+    const globalCounterDiv = document.getElementById('globalCounter');
+    const totalMatchesSpan = document.getElementById('totalMatches');
+    
+    let totalGlobal = 0; // Para el contador general
 
     sections.forEach(section => {
         const rows = section.querySelectorAll('.item-row');
         let sectionHasVisibleRows = false;
 
         rows.forEach(row => {
-            row.classList.remove('hidden-row');
             const rowText = (row.textContent + " " + row.getAttribute('data-aula-group')).toLowerCase();
             const matches = term === "" || rowText.includes(term);
             
-            // 1. LIMPIAR RESALTADOS (Ahora de forma más segura)
+            // Limpiar resaltado
             row.querySelectorAll('td:not(.celda-ubicacion)').forEach(td => {
-                if (td.querySelector('.resaltado')) {
-                    td.innerHTML = td.textContent; 
-                }
+                if (td.querySelector('.resaltado')) td.innerHTML = td.textContent;
             });
 
             if (matches) {
+                row.classList.remove('hidden-row');
                 sectionHasVisibleRows = true;
-                
-                // 2. APLICAR RESALTADO MEJORADO
-                // Quitamos la restricción de 'td.children.length === 0' para que pinte en APLICACIONES
+                if (term !== "") totalGlobal++; // Sumamos al contador global
+
+                // Resaltar texto (incluyendo Aplicaciones)
                 if (term.length > 2) {
                     row.querySelectorAll('td:not(.celda-ubicacion)').forEach(td => {
-                        const textoCelda = td.textContent.toLowerCase();
-                        if (textoCelda.includes(term)) {
+                        if (td.textContent.toLowerCase().includes(term)) {
                             const regex = new RegExp(`(${term})`, 'gi');
-                            // Reemplazamos el texto manteniendo cualquier etiqueta oculta si existiera
                             td.innerHTML = td.textContent.replace(regex, '<span class="resaltado">$1</span>');
                         }
                     });
@@ -263,7 +266,7 @@ document.getElementById('masterSearch').addEventListener('keyup', function() {
             }
         });
 
-        // 3. REPARACIÓN DE CELDAS DE UBICACIÓN (Mantenemos la lógica que ya arreglamos)
+        // REPARACIÓN DE CELDAS DE UBICACIÓN (Tu lógica actual)
         const tables = section.querySelectorAll('table');
         tables.forEach(table => {
             const groups = {};
@@ -273,15 +276,9 @@ document.getElementById('masterSearch').addEventListener('keyup', function() {
                 groups[gid].all.push(row);
                 if (!row.classList.contains('hidden-row')) groups[gid].visible.push(row);
             });
-
             for (let gid in groups) {
                 const group = groups[gid];
-                let celda = null;
-                group.all.forEach(r => {
-                    const found = r.querySelector('.celda-ubicacion');
-                    if (found) celda = found;
-                });
-
+                let celda = Array.from(group.all).map(r => r.querySelector('.celda-ubicacion')).find(c => c !== null);
                 if (celda) {
                     if (group.visible.length > 0) {
                         celda.style.display = ""; 
@@ -294,13 +291,21 @@ document.getElementById('masterSearch').addEventListener('keyup', function() {
             }
         });
 
-        // 4. VISIBILIDAD DE SECCIONES
+        // Visibilidad de secciones
         section.querySelectorAll('.estado-container').forEach(container => {
             const visibleInContainer = container.querySelectorAll('.item-row:not(.hidden-row)').length;
             container.classList.toggle('hidden-section', visibleInContainer === 0 && term !== "");
         });
         section.classList.toggle('hidden-section', !sectionHasVisibleRows && term !== "");
     });
+
+    // 3. ACTUALIZAR EL CONTADOR GLOBAL
+    if (term !== "" && totalGlobal > 0) {
+        globalCounterDiv.style.display = "block";
+        totalMatchesSpan.textContent = totalGlobal;
+    } else {
+        globalCounterDiv.style.display = "none";
+    }
 });
 </script>
 </body>
