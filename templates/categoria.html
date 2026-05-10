@@ -52,7 +52,6 @@
     
     .table td { border: 1px solid #ccc !important; padding: 12px; vertical-align: middle; word-wrap: break-word; }
 
-    /* ESTILO DE LA CELDA DE AULA AGRUPADA */
     .aula-cell { 
         background-color: #f1f5f9 !important; 
         text-align: center; 
@@ -228,7 +227,7 @@
         const rows = Array.from(document.querySelectorAll('tbody tr.equipo-row'));
         const groups = {};
 
-        // 1. Agrupar filas por ubicación
+        // 1. Agrupar filas por su ubicación real
         rows.forEach(row => {
             const ubi = row.getAttribute('data-ubicacion');
             if (!groups[ubi]) groups[ubi] = [];
@@ -237,15 +236,20 @@
 
         let totalVisible = 0;
 
-        // 2. Procesar cada grupo de aulas
         Object.keys(groups).forEach(ubiName => {
             const groupRows = groups[ubiName];
+            
+            // Comprobamos si el término de búsqueda coincide con el nombre del aula
+            const isUbiMatch = ubiName.toLowerCase().includes(term);
+            
             let visibleInGroup = [];
 
-            // Comprobar coincidencias
             groupRows.forEach(row => {
-                const text = row.innerText.toLowerCase();
-                if (text.includes(term)) {
+                const rowText = row.innerText.toLowerCase();
+                // Una fila es visible si:
+                // a) El nombre del aula coincide con la búsqueda
+                // b) Algún otro dato de la fila coincide con la búsqueda
+                if (isUbiMatch || rowText.includes(term)) {
                     row.classList.remove('hidden-row');
                     visibleInGroup.push(row);
                     totalVisible++;
@@ -254,27 +258,24 @@
                 }
             });
 
-            // 3. Localizar la celda con el nombre del aula (la del rowspan)
+            // 2. Gestionar la celda 'aula-cell' con el rowspan
             let aulaCell = null;
             groupRows.forEach(row => {
                 const cell = row.querySelector('.aula-cell');
                 if (cell) aulaCell = cell;
             });
 
-            // 4. Lógica de re-agrupación dinámica
             if (visibleInGroup.length > 0) {
                 const firstVisibleRow = visibleInGroup[0];
                 if (aulaCell) {
                     aulaCell.style.display = '';
                     aulaCell.rowSpan = visibleInGroup.length;
-                    // Si la fila que antes tenía el aula se ha ocultado, "robamos" la celda
-                    // y la ponemos en la primera fila que sí es visible.
+                    // Mover la celda del aula a la primera fila que sea visible en este momento
                     if (firstVisibleRow.firstElementChild !== aulaCell) {
                         firstVisibleRow.prepend(aulaCell);
                     }
                 }
             } else {
-                // Si ninguna fila del grupo es visible, ocultamos la celda del aula
                 if (aulaCell) aulaCell.style.display = 'none';
             }
         });
