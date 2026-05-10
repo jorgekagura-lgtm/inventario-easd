@@ -52,12 +52,13 @@
     
     .table td { border: 1px solid #ccc !important; padding: 12px; vertical-align: middle; word-wrap: break-word; }
 
-    /* ESTILOS CORREGIDOS PARA LA UBICACIÓN */
+    /* ESTILO DE LA CELDA DE AULA AGRUPADA */
     .aula-cell { 
         background-color: #f1f5f9 !important; 
         text-align: center; 
         width: 130px;
-        border-right: 4px solid var(--easd-blue) !important; 
+        border-right: 4px solid var(--easd-blue) !important;
+        vertical-align: middle;
     }
 
     .aula-tag { 
@@ -67,12 +68,7 @@
         border-radius: 8px; 
         font-size: 0.85rem; 
         font-weight: bold; 
-        display: none; /* Se oculta por defecto */
-    }
-
-    /* Solo mostramos el tag en la fila que tiene la clase 'first-visible' */
-    .first-visible .aula-tag {
-        display: inline-block !important;
+        display: inline-block; 
     }
 
     .hidden-row { display: none !important; }
@@ -94,7 +90,6 @@
         @page { size: landscape; margin: 0.5cm; }
         .header-buttons, .top-controls, .actions-column { display: none !important; }
         .table thead th { background-color: #003366 !important; color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-        .aula-tag { display: inline-block !important; } /* En impresión mostramos todos para evitar huecos */
     }
 </style>
 </head>
@@ -165,10 +160,12 @@
                     {% set grupos = equipos|groupby('ubicacion') %}
                     {% for ubicacion, lista_equipos in grupos %}
                         {% for e in lista_equipos %}
-                        <tr class="equipo-row {% if loop.first %}first-visible{% endif %}" data-ubicacion="{{ ubicacion }}">
-                            <td class="aula-cell">
+                        <tr class="equipo-row" data-ubicacion="{{ ubicacion }}">
+                            {% if loop.first %}
+                            <td class="aula-cell" rowspan="{{ lista_equipos|length }}">
                                 <span class="aula-tag">{{ ubicacion }}</span>
                             </td>
+                            {% endif %}
                             
                             <td class="fw-bold text-center">{{ e.ns_torre or '---' }}</td>
 
@@ -226,34 +223,62 @@
     </div>
 
 <script>
-    // Lógica del buscador mejorada para evitar desajustes
     document.getElementById('buscador').addEventListener('keyup', function() {
         const term = this.value.toLowerCase();
-        const rows = document.querySelectorAll('tbody tr.equipo-row');
-        let totalVisible = 0;
-        let lastUbiVisible = "";
+        const rows = Array.from(document.querySelectorAll('tbody tr.equipo-row'));
+        const groups = {};
 
+        // 1. Agrupar filas por ubicación
         rows.forEach(row => {
-            const text = row.innerText.toLowerCase();
-            const ubi = row.getAttribute('data-ubicacion').toLowerCase();
-            
-            // Quitamos la marca de "primera fila visible"
-            row.classList.remove('first-visible');
+            const ubi = row.getAttribute('data-ubicacion');
+            if (!groups[ubi]) groups[ubi] = [];
+            groups[ubi].push(row);
+        });
 
-            if (text.includes(term) || ubi.includes(term)) {
-                row.classList.remove('hidden-row');
-                totalVisible++;
+        let totalVisible = 0;
 
-                // Lógica para mostrar el nombre del aula solo en la primera fila visible de cada grupo
-                let currentUbi = row.getAttribute('data-ubicacion');
-                if (currentUbi !== lastUbiVisible) {
-                    row.classList.add('first-visible');
-                    lastUbiVisible = currentUbi;
+        // 2. Procesar cada grupo de aulas
+        Object.keys(groups).forEach(ubiName => {
+            const groupRows = groups[ubiName];
+            let visibleInGroup = [];
+
+            // Comprobar coincidencias
+            groupRows.forEach(row => {
+                const text = row.innerText.toLowerCase();
+                if (text.includes(term)) {
+                    row.classList.remove('hidden-row');
+                    visibleInGroup.push(row);
+                    totalVisible++;
+                } else {
+                    row.classList.add('hidden-row');
+                }
+            });
+
+            // 3. Localizar la celda con el nombre del aula (la del rowspan)
+            let aulaCell = null;
+            groupRows.forEach(row => {
+                const cell = row.querySelector('.aula-cell');
+                if (cell) aulaCell = cell;
+            });
+
+            // 4. Lógica de re-agrupación dinámica
+            if (visibleInGroup.length > 0) {
+                const firstVisibleRow = visibleInGroup[0];
+                if (aulaCell) {
+                    aulaCell.style.display = '';
+                    aulaCell.rowSpan = visibleInGroup.length;
+                    // Si la fila que antes tenía el aula se ha ocultado, "robamos" la celda
+                    // y la ponemos en la primera fila que sí es visible.
+                    if (firstVisibleRow.firstElementChild !== aulaCell) {
+                        firstVisibleRow.prepend(aulaCell);
+                    }
                 }
             } else {
-                row.classList.add('hidden-row');
+                // Si ninguna fila del grupo es visible, ocultamos la celda del aula
+                if (aulaCell) aulaCell.style.display = 'none';
             }
         });
+
         document.getElementById('contador').innerText = totalVisible;
     });
 
