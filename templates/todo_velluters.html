@@ -121,10 +121,10 @@
         <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" alt="Logo EASD 2" style="max-height: 45px;">
     </div>
 
-    <div class="header-center" style="text-align: center; flex-grow: 1;">
-        <h1 class="panel-title">VELLUTERS</h1>
-        <p class="panel-subtitle">PANEL DE GESTIÓN / INVENTARIO GLOBAL</p>
-    </div>
+<div class="header-center" style="text-align: center; flex-grow: 1;">
+    <h1 class="panel-title">{{ sede|upper }}</h1>
+    <p class="panel-subtitle">PANEL DE GESTIÓN / INVENTARIO GLOBAL</p>
+</div>
 
     <div class="header-right" style="display: flex; gap: 12px;">
         <button onclick="window.print()" class="btn-action btn-print">
