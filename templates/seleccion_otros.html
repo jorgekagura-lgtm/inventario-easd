@@ -129,23 +129,24 @@
 </head>
 <body>
 
-    <header class="header-easd">
-        <div class="logos-container">
-            <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" alt="Logo 1" class="logo-img">
-            <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" alt="Logo 2" class="logo-img">
-        </div>
+<header class="header-easd">
+    <!-- Enlace envolviendo los logos para volver al inicio -->
+    <a href="/" class="logos-container" style="display: flex; gap: 15px; text-decoration: none; cursor: pointer;">
+        <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" alt="Logo 1" class="logo-img">
+        <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" alt="Logo 2" class="logo-img">
+    </a>
 
-        <div class="title-container">
-            <h1>OTROS - {{ sede }}</h1>
-            <p>Selecciona el modelo de torre</p>
-        </div>
+    <div class="title-container">
+        <h1>OTROS - {{ sede }}</h1>
+        <p>Selecciona el modelo de torre</p>
+    </div>
 
-        <div>
-            <a href="{{ url_for('ver_sede', nombre_sede=sede) }}" class="btn-volver">
-                ← Volver
-            </a>
-        </div>
-    </header>
+    <div>
+        <a href="{{ url_for('ver_sede', nombre_sede=sede) }}" class="btn-volver">
+            ← Volver
+        </a>
+    </div>
+</header>
 
     <main class="container-cards">
         <a href="{{ url_for('ver_sede', nombre_sede=sede, cat='OTROS', estado='Gigabyte') }}" class="card-sel">
