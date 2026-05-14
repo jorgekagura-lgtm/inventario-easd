@@ -76,21 +76,22 @@
 </head>
 <body>
 
-    <header class="header-bar">
-        <div style="display: flex; gap: 15px;">
-            <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" class="logo-img">
-            <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" class="logo-img">
-        </div>
+<header class="header-bar">
+    <!-- Enlace envolviendo los logos para volver al inicio -->
+    <a href="/" style="display: flex; gap: 15px; text-decoration: none; cursor: pointer;">
+        <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" class="logo-img">
+        <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" class="logo-img">
+    </a>
 
-        <div class="title-select">
-            <h1>HP - {{ sede }}</h1>
-            <p style="margin:0; font-weight: 700; color: #64748b;">SELECCIONA EL MODELO DE TORRE</p>
-        </div>
+    <div class="title-select">
+        <h1>HP - {{ sede }}</h1>
+        <p style="margin:0; font-weight: 700; color: #64748b;">SELECCIONA EL MODELO DE TORRE</p>
+    </div>
 
-        <a href="{{ url_for('ver_sede', nombre_sede=sede) }}" class="btn-volver">
-            <i class="bi bi-arrow-left"></i> VOLVER
-        </a>
-    </header>
+    <a href="{{ url_for('ver_sede', nombre_sede=sede) }}" class="btn-volver">
+        <i class="bi bi-arrow-left"></i> VOLVER
+    </a>
+</header>
 
     <main class="main-content">
         <div class="grid-hp">
