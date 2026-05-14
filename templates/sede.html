@@ -83,20 +83,21 @@
 <body>
 
     <header class="header-bar">
-        <div class="header-item logo-container">
-            <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" alt="Logo 1" class="logo-img">
-            <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" alt="Logo 2" class="logo-img">
-        </div>
+    <!-- Envolvemos el contenedor del logo en un enlace a la raíz -->
+    <a href="/" class="header-item logo-container" style="text-decoration: none; display: flex; gap: 15px;">
+        <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" alt="Logo 1" class="logo-img">
+        <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" alt="Logo 2" class="logo-img">
+    </a>
 
-        <div class="header-item titulo-centro">
-            <h1 class="titulo-grande">{{ sede }}</h1>
-            <p style="color: #6c757d; letter-spacing: 3px; margin: 0; font-weight: 700;">PANEL DE GESTIÓN</p>
-        </div>
+    <div class="header-item titulo-centro">
+        <h1 class="titulo-grande">{{ sede }}</h1>
+        <p style="color: #6c757d; letter-spacing: 3px; margin: 0; font-weight: 700;">PANEL DE GESTIÓN</p>
+    </div>
 
-        <div class="header-item" style="justify-content: flex-end;">
-            <a href="/" class="btn-inicio"><i class="bi bi-house-door"></i> Inicio</a>
-        </div>
-    </header>
+    <div class="header-item" style="justify-content: flex-end;">
+        <a href="/" class="btn-inicio"><i class="bi bi-house-door"></i> Inicio</a>
+    </div>
+</header>
 
     <main class="grid-categorias">
         <a href="/sede/{{ sede }}?cat=HP" class="card-cat">
