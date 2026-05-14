@@ -138,10 +138,13 @@
 </head>
 <body>
 
-    <header class="header-form">
+<header class="header-form">
+    <!-- Envolvemos ambos logos en un único enlace al inicio -->
+    <a href="/" style="display: flex; gap: 15px; text-decoration: none; align-items: center;">
         <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" style="max-height: 45px;">
         <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" style="max-height: 45px;">
-    </header>
+    </a>
+</header>
 
     <div class="card card-custom">
         <div class="card-header">
