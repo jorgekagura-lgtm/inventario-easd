@@ -136,21 +136,6 @@
     </div>
 </header>
 
-<div class="header-center" style="text-align: center; flex-grow: 1;">
-    <h1 class="panel-title">{{ sede|upper }}</h1>
-    <p class="panel-subtitle">PANEL DE GESTIÓN / INVENTARIO GLOBAL</p>
-</div>
-
-    <div class="header-right" style="display: flex; gap: 12px;">
-        <button onclick="window.print()" class="btn-action btn-print">
-            <i class="bi bi-printer"></i> Imprimir PDF
-        </button>
-        <a href="{{ url_for('ver_sede', nombre_sede=sede) }}" class="btn-action">
-            <i class="bi bi-house-door"></i> Inicio
-        </a>
-    </div>
-</header>
-
 <div class="search-box-container">
     <input type="text" id="masterSearch" class="search-input" placeholder="🔍 Buscar por Aula, Nº Serie, Categoría, Software, ID Inventario...">
     <div id="globalCounter" class="ms-3 shadow-sm" style="display: none; background: var(--easd-orange); color: white; padding: 10px 20px; border-radius: 50px; font-weight: 800; min-width: 120px; text-align: center;">
