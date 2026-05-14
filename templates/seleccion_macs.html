@@ -136,27 +136,35 @@
 </head>
 <body>
 
-    <header class="header-simple">
-        <div class="logos-wrapper">
-            <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" alt="Logo 1" class="logo-img">
-            <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" alt="Logo 2" class="logo-img">
-        </div>
+<header class="header-simple">
+    <!-- Cambiamos el div por un enlace <a> para que los logos vuelvan al inicio -->
+    <a href="/" class="logos-wrapper" style="display: flex; gap: 15px; text-decoration: none; cursor: pointer;">
+        <img src="{{ url_for('static', filename='img/easd-valencia-1.png') }}" alt="Logo 1" class="logo-img">
+        <img src="{{ url_for('static', filename='img/easd-valencia-2.png') }}" alt="Logo 2" class="logo-img">
+    </a>
 
-        <div class="header-title">
-            <h1>{{ categoria }} - {{ sede }}</h1>
-            <p>SELECCIONA EL ESTADO DE LOS EQUIPOS</p>
-        </div>
+    <div class="header-title">
+        <h1>{{ categoria }} - {{ sede }}</h1>
+        <p>SELECCIONA EL ESTADO DE LOS EQUIPOS</p>
+    </div>
 
-        <a href="{{ url_for('ver_sede', nombre_sede=sede) }}" class="btn-back">
-            <i class="bi bi-arrow-left"></i> VOLVER
-        </a>
-    </header>
+    <a href="{{ url_for('ver_sede', nombre_sede=sede) }}" class="btn-back">
+        <i class="bi bi-arrow-left"></i> VOLVER
+    </a>
+</header>
 
     <div class="main-content">
         <a href="{{ url_for('ver_sede', nombre_sede=sede, cat=categoria, estado='Activo') }}" class="selection-card">
             <i class="bi bi-display"></i>
             <h3>EN USO</h3>
             <p>Equipos operativos asignados a aulas y departamentos.</p>
+        </a>
+
+        <!-- NUEVA TARDE DE RESERVA -->
+        <a href="{{ url_for('ver_sede', nombre_sede=sede, cat=categoria, estado='En reserva') }}" class="selection-card">
+            <i class="bi bi-box-seam"></i>
+            <h3>EN RESERVA</h3>
+            <p>Equipos disponibles en almacén para futuras sustituciones.</p>
         </a>
 
         <a href="{{ url_for('ver_sede', nombre_sede=sede, cat=categoria, estado='Retirada') }}" class="selection-card">
