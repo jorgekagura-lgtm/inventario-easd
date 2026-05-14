@@ -94,36 +94,46 @@
 </head>
 <body>
 
-    <header class="header-easd">
-        <div class="header-logos" style="display: flex; gap: 15px;">
-            <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" style="max-height: 50px;">
-            <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" style="max-height: 50px;">
-        </div>
-        <div class="header-title">
-            <h1 id="titulo-categoria">{{ categoria }}</h1>
-            <p id="titulo-sede" class="m-0 fw-bold text-muted" style="font-size: 0.9rem;">{{ sede | upper }} | {{ estado | upper }}</p>
-        </div>
-        <div class="header-buttons">
-            <button onclick="imprimirTabla()" class="btn-print" style="background-color: #28a745; color: white; border: none; border-radius: 50px; font-weight: bold; padding: 8px 20px; cursor: pointer;">IMPRIMIR</button>
-            <a href="{{ url_for('formulario_nuevo', sede=sede, categoria=categoria, estado=estado) }}" class="btn-add">AÑADIR</a>
-            
-            {% if categoria == 'APDS' %}
-                <a href="{{ url_for('ver_sede', nombre_sede=sede) }}" class="btn-back">VOLVER</a>
-            {% else %}
-                <a href="{{ url_for('ver_sede', nombre_sede=sede, cat=categoria) }}" class="btn-back">VOLVER</a>
-            {% endif %}
-        </div>
-    </header>
+<header class="header-easd">
+    <!-- Envolvemos los logos en un enlace para volver al inicio -->
+    <a href="/" class="header-logos" style="display: flex; gap: 15px; text-decoration: none; cursor: pointer;">
+        <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" style="max-height: 50px;">
+        <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" style="max-height: 50px;">
+    </a>
 
-    <div class="top-controls">
-        <div class="search-container">
-            <i class="bi bi-search"></i>
-            <input type="text" id="buscador" class="search-input" placeholder="Buscar por serie, características, anotaciones...">
-        </div>
-        <div class="counter-badge">
-            TOTAL <span id="contador">{{ equipos|length }}</span>
-        </div>
+    <div class="header-title">
+        <h1 id="titulo-categoria">{{ categoria }}</h1>
+        <p id="titulo-sede" class="m-0 fw-bold text-muted" style="font-size: 0.9rem;">{{ sede | upper }} | {{ estado | upper }}</p>
     </div>
+
+    <div class="header-buttons">
+        <button onclick="imprimirTabla()" class="btn-print" style="background-color: #28a745; color: white; border: none; border-radius: 50px; font-weight: bold; padding: 8px 20px; cursor: pointer;">IMPRIMIR</button>
+        <a href="{{ url_for('formulario_nuevo', sede=sede, categoria=categoria, estado=estado) }}" class="btn-add">AÑADIR</a>
+        
+        {% if categoria == 'APDS' %}
+            <a href="{{ url_for('ver_sede', nombre_sede=sede) }}" class="btn-back">VOLVER</a>
+        {% else %}
+            <a href="{{ url_for('ver_sede', nombre_sede=sede, cat=categoria) }}" class="btn-back">VOLVER</a>
+        {% endif %}
+    </div>
+</header>
+
+        <div class="top-controls">
+            <!-- Cambiamos el div por un form para habilitar la búsqueda global -->
+            <form action="{{ url_for('buscar_global') }}" method="GET" class="search-container">
+                <i class="bi bi-search"></i>
+                <input type="text" 
+                    name="q" 
+                    id="buscador" 
+                    class="search-input" 
+                    placeholder="Introduce dato al buscar..."
+                    required>
+            </form>
+            
+            <div class="counter-badge">
+                TOTAL <span id="contador">{{ equipos|length }}</span>
+            </div>
+        </div>
 
     <div class="main-content">
         <div class="card-table">
@@ -205,11 +215,13 @@
                                     <a href="{{ url_for('editar_equipo', id=e.id) }}" class="btn-edit" title="Editar">
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
-                                    <a href="{{ url_for('eliminar_equipo', id=e.id, sede=sede, categoria=categoria) }}" 
-                                       class="btn-delete" 
-                                       title="Eliminar"
-                                       onclick="return confirm('¿Seguro que quieres eliminar este equipo?')">
-                                         <i class="bi bi-trash3"></i>
+                                    
+                                    <!-- Enlace actualizado con el parámetro estado -->
+                                    <a href="{{ url_for('eliminar_equipo', id=e.id, sede=sede, categoria=categoria, estado=estado) }}" 
+                                    class="btn-delete" 
+                                    title="Eliminar"
+                                    onclick="return confirm('¿Seguro que quieres eliminar este equipo?')">
+                                        <i class="bi bi-trash3"></i>
                                     </a>
                                 </div>
                             </td>
