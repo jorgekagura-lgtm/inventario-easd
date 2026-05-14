@@ -115,11 +115,26 @@
 <body>
 
 <header class="header-global no-print">
-    <div class="header-left" style="display: flex; align-items: center; gap: 20px;">
-        <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" alt="Logo EASD 1" style="max-height: 45px;">
-        <div style="width: 1px; height: 30px; background: #ddd;"></div>
-        <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" alt="Logo EASD 2" style="max-height: 45px;">
+<a href="/" class="header-left" style="display: flex; align-items: center; gap: 20px; text-decoration: none; cursor: pointer;">
+    <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" alt="Logo EASD 1" style="max-height: 45px;">
+    <div style="width: 1px; height: 30px; background: #ddd;"></div>
+    <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" alt="Logo EASD 2" style="max-height: 45px;">
+</a>
+
+<div class="header-center" style="text-align: center; flex-grow: 1;">
+    <h1 class="panel-title">{{ sede|upper }}</h1>
+    <p class="panel-subtitle">PANEL DE GESTIÓN / INVENTARIO GLOBAL</p>
+</div>
+
+    <div class="header-right" style="display: flex; gap: 12px;">
+        <button onclick="window.print()" class="btn-action btn-print">
+            <i class="bi bi-printer"></i> Imprimir PDF
+        </button>
+        <a href="{{ url_for('ver_sede', nombre_sede=sede) }}" class="btn-action">
+            <i class="bi bi-house-door"></i> Inicio
+        </a>
     </div>
+</header>
 
 <div class="header-center" style="text-align: center; flex-grow: 1;">
     <h1 class="panel-title">{{ sede|upper }}</h1>
