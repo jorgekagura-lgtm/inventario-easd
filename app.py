@@ -102,14 +102,32 @@ def buscar_global():
     query = request.args.get('q', '').strip()
     if not query:
         return redirect(url_for('index'))
-        
+    
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
+
+    # --- LÓGICA DE ATAJOS DE BÚSQUEDA ---
+    # 1. Búsqueda por el FINAL: \CZC -> termina en CZC
+    if query.startswith('\\'):
+        search_term = query[1:].lower()
+        search_pattern = f"%{search_term}"
     
-    # --- ÚNICA MODIFICACIÓN: Pasamos el patrón a minúsculas ---
-    search_pattern = f"%{query.lower()}%"
+    # 2. Búsqueda por el MEDIO: /5407/ -> contiene exactamente 5407
+    elif query.startswith('/') and query.endswith('/'):
+        search_term = query[1:-1].lower()
+        search_pattern = f"%{search_term}%"
+        
+    # 3. Búsqueda por el PRINCIPIO: /PHJ -> empieza por PHJ
+    elif query.startswith('/'):
+        search_term = query[1:].lower()
+        search_pattern = f"{search_term}%"
     
-    # --- ÚNICA MODIFICACIÓN: Usamos ILIKE para Postgres y LOWER para SQLite ---
+    # 4. Búsqueda NORMAL: phj -> contiene phj en cualquier parte
+    else:
+        search_term = query.lower()
+        search_pattern = f"%{search_term}%"
+
+    # Usamos ILIKE (Postgres) o LOWER (SQLite) según el entorno
     if IS_HEROKU:
         sql = '''
             SELECT * FROM equipos 
@@ -120,8 +138,7 @@ def buscar_global():
             SELECT * FROM equipos 
             WHERE LOWER(ns_torre) LIKE ? OR LOWER(ns_monitor) LIKE ? OR LOWER(id_inv_torre) LIKE ? OR LOWER(id_inv_monitor) LIKE ? OR LOWER(ubicacion) LIKE ?
         '''
-    # ---------------------------------------------------------
-
+    
     cur.execute(sql, (search_pattern,)*5)
     resultados = cur.fetchall()
     conn.close()
