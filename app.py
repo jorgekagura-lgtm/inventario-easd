@@ -99,57 +99,49 @@ def index():
 
 @app.route('/buscar_global')
 def buscar_global():
-    # Mantenemos tu lógica de limpiar el query
     query = request.args.get('q', '').strip()
     if not query:
         return redirect(url_for('index'))
-    
-    # Creamos una versión en minúsculas para la búsqueda
-    query_low = query.lower()
-    
+        
     conn = get_db_connection()
-    # Mantenemos el cursor según el entorno
     cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
     
-    search_pattern = f"%{query_low}%"
+    # --- ÚNICA MODIFICACIÓN: Pasamos el patrón a minúsculas ---
+    search_pattern = f"%{query.lower()}%"
     
+    # --- ÚNICA MODIFICACIÓN: Usamos ILIKE para Postgres y LOWER para SQLite ---
     if IS_HEROKU:
-        # Añadimos ILIKE para la nube sin quitar tus campos de búsqueda original
         sql = '''
             SELECT * FROM equipos 
-            WHERE ns_torre ILIKE %s 
-               OR ns_monitor ILIKE %s 
-               OR id_inv_torre ILIKE %s 
-               OR id_inv_monitor ILIKE %s 
-               OR ubicacion ILIKE %s
+            WHERE ns_torre ILIKE %s OR ns_monitor ILIKE %s OR id_inv_torre ILIKE %s OR id_inv_monitor ILIKE %s OR ubicacion ILIKE %s
         '''
     else:
-        # Usamos LOWER() para local sin cambiar tu estructura original
         sql = '''
             SELECT * FROM equipos 
-            WHERE LOWER(ns_torre) LIKE ? 
-               OR LOWER(ns_monitor) LIKE ? 
-               OR LOWER(id_inv_torre) LIKE ? 
-               OR LOWER(id_inv_monitor) LIKE ? 
-               OR LOWER(ubicacion) LIKE ?
+            WHERE LOWER(ns_torre) LIKE ? OR LOWER(ns_monitor) LIKE ? OR LOWER(id_inv_torre) LIKE ? OR LOWER(id_inv_monitor) LIKE ? OR LOWER(ubicacion) LIKE ?
         '''
-    
+    # ---------------------------------------------------------
+
     cur.execute(sql, (search_pattern,)*5)
     resultados = cur.fetchall()
     conn.close()
     
-    # Mantenemos tu conversión a diccionario y el render exacto de tu local
     equipos = [dict(r) for r in resultados]
     return render_template('resultados_busqueda.html', equipos=equipos, query=query)
-def ver_todos(nombre_sede):
+
+@app.route('/sede/<nombre_sede>/todo')
+@app.route('/sede/<nombre_sede>/todos') # Soporta ambas versiones de URL
+def ver_todos(nombre_sede): # Mantenemos el nombre que tus botones necesitan
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
     
+    # Tu lógica original de consulta
     sql = "SELECT * FROM equipos WHERE sede = %s" if IS_HEROKU else "SELECT * FROM equipos WHERE sede = ?"
     cur.execute(sql, (nombre_sede,))
     todos = cur.fetchall()
     conn.close()
 
+    # Mantenemos tu lógica de organización exacta
     inventario = {}
     for equipo in todos:
         e_dict = dict(equipo)
