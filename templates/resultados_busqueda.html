@@ -112,7 +112,8 @@
                     <tr>
                         <th style="width: 15%;">SEDE</th>
                         <th style="width: 20%;">UBICACIÓN</th>
-                        <th style="width: 25%;">Nº SERIE</th>
+                        <th style="width: 25%;">Nº SERIE TORRE</th>
+                        <th style="width: 25%;">Nº SERIE MONITOR</th>
                         <th style="width: 25%;">INFO / TIPO</th>
                         <th style="width: 15%;">ACCIONES</th>
                     </tr>
@@ -120,16 +121,18 @@
                 <tbody>
                     {% for e in equipos %}
                     <tr>
-                        <!-- 1. SEDE -->
                         <td><span class="badge-info">{{ e.sede | upper }}</span></td>
                         
-                        <!-- 2. UBICACIÓN -->
                         <td><span class="aula-tag">{{ e.ubicacion }}</span></td>
                         
-                        <!-- 3. Nº SERIE -->
-                        <td style="font-weight: 900; color: var(--easd-blue); font-size: 1.1rem;">{{ e.ns_torre or '---' }}</td>
+                        <td style="font-weight: 900; color: var(--easd-blue); font-size: 1.1rem;">
+                            {{ e.ns_torre or '---' }}
+                        </td>
+
+                        <td style="font-weight: 900; color: var(--easd-blue); font-size: 1.1rem;">
+                            {{ e.ns_monitor or '---' }}
+                        </td>
                         
-                        <!-- 4. INFO DINÁMICA (CATEGORÍA O TIPO) -->
                         <td>
                             {% if e.categoria == 'MACS' %}
                                 <strong style="color: var(--easd-orange);">{{ e.id_inv_torre or 'MAC' }}</strong>
@@ -139,7 +142,6 @@
                             {% endif %}
                         </td>
                         
-                        <!-- 5. ACCIONES -->
                         <td class="actions-column">
                             <div class="actions-container">
                                 <a href="{{ url_for('editar_equipo', id=e.id) }}" class="btn-edit">
