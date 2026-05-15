@@ -104,30 +104,24 @@ def buscar_global():
         return redirect(url_for('index'))
     
     conn = get_db_connection()
+    # Mantenemos la lógica de cursor para local/nube
     cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
 
     # --- LÓGICA DE ATAJOS DE BÚSQUEDA ---
-    # 1. Búsqueda por el FINAL: \CZC -> termina en CZC
     if query.startswith('\\'):
         search_term = query[1:].lower()
         search_pattern = f"%{search_term}"
-    
-    # 2. Búsqueda por el MEDIO: /5407/ -> contiene exactamente 5407
     elif query.startswith('/') and query.endswith('/'):
         search_term = query[1:-1].lower()
         search_pattern = f"%{search_term}%"
-        
-    # 3. Búsqueda por el PRINCIPIO: /PHJ -> empieza por PHJ
     elif query.startswith('/'):
         search_term = query[1:].lower()
         search_pattern = f"{search_term}%"
-    
-    # 4. Búsqueda NORMAL: phj -> contiene phj en cualquier parte
     else:
         search_term = query.lower()
         search_pattern = f"%{search_term}%"
 
-    # Usamos ILIKE (Postgres) o LOWER (SQLite) según el entorno
+    # La consulta SQL ya busca en ns_monitor, esto es correcto:
     if IS_HEROKU:
         sql = '''
             SELECT * FROM equipos 
