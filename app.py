@@ -78,7 +78,7 @@ def init_db():
             id_inv_torre TEXT,
             ns_monitor TEXT,
             id_inv_monitor TEXT,
-            aplicaciones TEXT,
+            applications TEXT,
             anotaciones TEXT, 
             estado TEXT DEFAULT 'Activo',
             preparado INTEGER DEFAULT 0
@@ -104,10 +104,8 @@ def buscar_global():
         return redirect(url_for('index'))
     
     conn = get_db_connection()
-    # Mantenemos la lógica de cursor para local/nube
     cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
 
-    # --- LÓGICA DE ATAJOS DE BÚSQUEDA ---
     if query.startswith('\\'):
         search_term = query[1:].lower()
         search_pattern = f"%{search_term}"
@@ -121,7 +119,6 @@ def buscar_global():
         search_term = query.lower()
         search_pattern = f"%{search_term}%"
 
-    # La consulta SQL ya busca en ns_monitor, esto es correcto:
     if IS_HEROKU:
         sql = '''
             SELECT * FROM equipos 
@@ -141,18 +138,16 @@ def buscar_global():
     return render_template('resultados_busqueda.html', equipos=equipos, query=query)
 
 @app.route('/sede/<nombre_sede>/todo')
-@app.route('/sede/<nombre_sede>/todos') # Soporta ambas versiones de URL
-def ver_todos(nombre_sede): # Mantenemos el nombre que tus botones necesitan
+@app.route('/sede/<nombre_sede>/todos') 
+def ver_todos(nombre_sede): 
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
     
-    # Tu lógica original de consulta
     sql = "SELECT * FROM equipos WHERE sede = %s" if IS_HEROKU else "SELECT * FROM equipos WHERE sede = ?"
     cur.execute(sql, (nombre_sede,))
     todos = cur.fetchall()
     conn.close()
 
-    # Mantenemos tu lógica de organización exacta
     inventario = {}
     for equipo in todos:
         e_dict = dict(equipo)
@@ -197,6 +192,23 @@ def formulario_nuevo(sede, categoria):
     if categoria == 'APDS': estado_defecto = 'Retirada'
     return render_template('nuevo_registro.html', sede=sede, categoria=categoria, equipo=None, estado=estado_defecto, last_ub=request.args.get('last_ub', ''))
 
+# --- NUEVA RUTA CORREGIDA: Habilita el botón "Editar" del HTML ---
+@app.route('/editar_equipo/<int:id>')
+def editar_equipo(id):
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
+    sql = 'SELECT * FROM equipos WHERE id = %s' if IS_HEROKU else 'SELECT * FROM equipos WHERE id = ?'
+    cur.execute(sql, (id,))
+    equipo = cur.fetchone()
+    conn.close()
+    
+    if equipo:
+        e_dict = dict(equipo)
+        # Redirige al formulario de edición reutilizando la plantilla de nuevo registro
+        return render_template('nuevo_registro.html', sede=e_dict['sede'], categoria=e_dict['categoria'], equipo=e_dict, estado=e_dict['estado'], last_ub='')
+    flash("Equipo no encontrado")
+    return redirect(url_for('index'))
+
 @app.route('/agregar_equipo', methods=['POST'])
 def agregar_equipo():
     d = request.form
@@ -207,7 +219,6 @@ def agregar_equipo():
     sql = f'''INSERT INTO equipos (sede, categoria, ubicacion, ns_torre, id_inv_torre, ns_monitor, id_inv_monitor, aplicaciones, anotaciones, estado, preparado)
               VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})'''
     
-    # Aseguramos un entero puro (1 o 0): si viene "on" o cualquier valor marcado se guarda como 1
     if d.get('preparado') == 'on' or d.get('preparado') == 1 or d.get('preparado') == '1':
         valor_preparado = 1
     else:
@@ -224,14 +235,12 @@ def agregar_equipo():
     flash("Guardado correctamente")
     return redirect(url_for('formulario_nuevo', sede=d['sede'], categoria=d['categoria'], estado=d.get('estado'), last_ub=d['ubicacion']))
 
-
 @app.route('/actualizar_equipo', methods=['POST'])
 def actualizar_equipo():
     d = request.form
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # Aseguramos un entero puro (1 o 0) eliminando cualquier rastro de la cadena "on"
     if d.get('preparado') == 'on' or d.get('preparado') == 1 or d.get('preparado') == '1':
         valor_preparado = 1
     else:
