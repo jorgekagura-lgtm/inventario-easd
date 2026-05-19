@@ -207,29 +207,23 @@ def agregar_equipo():
     sql = f'''INSERT INTO equipos (sede, categoria, ubicacion, ns_torre, id_inv_torre, ns_monitor, id_inv_monitor, aplicaciones, anotaciones, estado, preparado)
               VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})'''
     
-    # CORRECCIÓN AQUÍ: Si 'preparado' está en el formulario (marcado como "on"), guardamos 1. Si no, miramos tipo_pantalla o por defecto 0.
-    if 'preparado' in d:
+    # Aseguramos un entero puro (1 o 0): si viene "on" o cualquier valor marcado se guarda como 1
+    if d.get('preparado') == 'on' or d.get('preparado') == 1 or d.get('preparado') == '1':
         valor_preparado = 1
     else:
-        valor_preparado = d.get('tipo_pantalla') or 0
+        try:
+            valor_preparado = int(d.get('tipo_pantalla', 0))
+        except (ValueError, TypeError):
+            valor_preparado = 0
 
     cur.execute(sql, (d['sede'], d['categoria'], d['ubicacion'].strip(), d.get('ns_torre',''), d.get('id_inv_torre',''), 
-                      d.get('ns_monitor',''), d.get('id_inv_monitor',''), d.get('aplicaciones',''), d.get('anotaciones',''), 
+                      d.get('ns_monitor',''), d.get('id_inv_monitor',''), d.get('applications', d.get('aplicaciones','')), d.get('anotaciones',''), 
                       d.get('estado', 'Activo'), valor_preparado))
     conn.commit()
     conn.close()
     flash("Guardado correctamente")
     return redirect(url_for('formulario_nuevo', sede=d['sede'], categoria=d['categoria'], estado=d.get('estado'), last_ub=d['ubicacion']))
 
-@app.route('/editar_equipo/<int:id>')
-def editar_equipo(id):
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
-    sql = 'SELECT * FROM equipos WHERE id = %s' if IS_HEROKU else 'SELECT * FROM equipos WHERE id = ?'
-    cur.execute(sql, (id,))
-    equipo = cur.fetchone()
-    conn.close()
-    return render_template('nuevo_registro.html', equipo=dict(equipo), sede=equipo['sede'], categoria=equipo['categoria'], estado=equipo['estado'])
 
 @app.route('/actualizar_equipo', methods=['POST'])
 def actualizar_equipo():
@@ -237,11 +231,14 @@ def actualizar_equipo():
     conn = get_db_connection()
     cur = conn.cursor()
     
-    # CORRECCIÓN AQUÍ: Convierte la cadena "on" enviada por el navegador en un entero 1 compatible con PostgreSQL
-    if 'preparado' in d:
+    # Aseguramos un entero puro (1 o 0) eliminando cualquier rastro de la cadena "on"
+    if d.get('preparado') == 'on' or d.get('preparado') == 1 or d.get('preparado') == '1':
         valor_preparado = 1
     else:
-        valor_preparado = d.get('tipo_pantalla') or 0
+        try:
+            valor_preparado = int(d.get('tipo_pantalla', 0))
+        except (ValueError, TypeError):
+            valor_preparado = 0
         
     ph = "%s" if IS_HEROKU else "?"
     
@@ -249,7 +246,7 @@ def actualizar_equipo():
               aplicaciones={ph}, anotaciones={ph}, estado={ph}, preparado={ph} WHERE id={ph}'''
     
     cur.execute(sql, (d['ubicacion'].strip(), d.get('ns_torre',''), d.get('id_inv_torre',''), d.get('ns_monitor',''), d.get('id_inv_monitor',''), 
-                      d.get('aplicaciones',''), d.get('anotaciones',''), d.get('estado'), valor_preparado, d['id']))
+                      d.get('applications', d.get('aplicaciones','')), d.get('anotaciones',''), d.get('estado'), valor_preparado, d['id']))
     conn.commit()
     conn.close()
     return redirect(url_for('ver_sede', nombre_sede=d['sede'], cat=d['categoria'], estado=d.get('estado')))
