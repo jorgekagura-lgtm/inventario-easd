@@ -207,8 +207,11 @@ def agregar_equipo():
     sql = f'''INSERT INTO equipos (sede, categoria, ubicacion, ns_torre, id_inv_torre, ns_monitor, id_inv_monitor, aplicaciones, anotaciones, estado, preparado)
               VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})'''
     
-    # Manejo de 'preparado' o 'tipo_pantalla' según lo que venga del form
-    valor_preparado = d.get('preparado') or d.get('tipo_pantalla') or 0
+    # CORRECCIÓN AQUÍ: Si 'preparado' está en el formulario (marcado como "on"), guardamos 1. Si no, miramos tipo_pantalla o por defecto 0.
+    if 'preparado' in d:
+        valor_preparado = 1
+    else:
+        valor_preparado = d.get('tipo_pantalla') or 0
 
     cur.execute(sql, (d['sede'], d['categoria'], d['ubicacion'].strip(), d.get('ns_torre',''), d.get('id_inv_torre',''), 
                       d.get('ns_monitor',''), d.get('id_inv_monitor',''), d.get('aplicaciones',''), d.get('anotaciones',''), 
@@ -234,7 +237,12 @@ def actualizar_equipo():
     conn = get_db_connection()
     cur = conn.cursor()
     
-    valor_preparado = d.get('preparado') or d.get('tipo_pantalla') or 0
+    # CORRECCIÓN AQUÍ: Convierte la cadena "on" enviada por el navegador en un entero 1 compatible con PostgreSQL
+    if 'preparado' in d:
+        valor_preparado = 1
+    else:
+        valor_preparado = d.get('tipo_pantalla') or 0
+        
     ph = "%s" if IS_HEROKU else "?"
     
     sql = f'''UPDATE equipos SET ubicacion={ph}, ns_torre={ph}, id_inv_torre={ph}, ns_monitor={ph}, id_inv_monitor={ph}, 
