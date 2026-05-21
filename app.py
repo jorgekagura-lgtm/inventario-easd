@@ -275,18 +275,21 @@ def eliminar_equipo(id, sede, categoria, estado):
 # ==========================================
 
 # 1. RUTA PARA CONSULTAR UBICACIÓN (Busca en torre o monitor)
+# ==========================================
+#         API PARA LA APLICACIÓN MÓVIL
+# ==========================================
+
 @app.route('/api/equipo/<serial>', methods=['GET'])
 def api_consultar_equipo(serial):
     try:
         conn = get_db_connection()
-        # Usamos RealDictCursor si estamos en la nube (Postgres/Neon)
         cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
         
-        # Buscamos si el serial coincide con la torre O con el monitor
+        # AGREGAMOS ", preparado" AL SELECT DE AMBOS CASOS:
         if IS_HEROKU:
-            sql = "SELECT id, sede, categoria, ubicacion, ns_torre, ns_monitor FROM equipos WHERE ns_torre = %s OR ns_monitor = %s"
+            sql = "SELECT id, sede, categoria, ubicacion, ns_torre, ns_monitor, preparado FROM equipos WHERE ns_torre = %s OR ns_monitor = %s"
         else:
-            sql = "SELECT id, sede, categoria, ubicacion, ns_torre, ns_monitor FROM equipos WHERE ns_torre = ? OR ns_monitor = ?"
+            sql = "SELECT id, sede, categoria, ubicacion, ns_torre, ns_monitor, preparado FROM equipos WHERE ns_torre = ? OR ns_monitor = ?"
             
         cur.execute(sql, (serial, serial))
         equipo = cur.fetchone()
@@ -295,7 +298,6 @@ def api_consultar_equipo(serial):
         conn.close()
         
         if equipo:
-            # Forzamos formato diccionario por si estás probando en local (SQLite)
             return jsonify(dict(equipo)), 200
         else:
             return jsonify({"error": "El número de serie no existe en el sistema"}), 404
