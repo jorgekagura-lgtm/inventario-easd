@@ -3,7 +3,7 @@ import sqlite3
 import psycopg2
 import re
 from psycopg2.extras import RealDictCursor
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Flask, render_template, request, redirect, url_for, flash, jsonify
 
 app = Flask(__name__)
 # Usa la variable de entorno en la nube o una clave por defecto en local
@@ -269,6 +269,71 @@ def eliminar_equipo(id, sede, categoria, estado):
     conn.commit()
     conn.close()
     return redirect(url_for('ver_sede', nombre_sede=sede, cat=categoria, estado=estado))
+
+# ==========================================
+#         API PARA LA APLICACIÓN MÓVIL
+# ==========================================
+
+# 1. RUTA PARA CONSULTAR UBICACIÓN (Busca en torre o monitor)
+@app.route('/api/equipo/<serial>', methods=['GET'])
+def api_consultar_equipo(serial):
+    try:
+        conn = get_db_connection()
+        # Usamos RealDictCursor si estamos en la nube (Postgres/Neon)
+        cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
+        
+        # Buscamos si el serial coincide con la torre O con el monitor
+        if IS_HEROKU:
+            sql = "SELECT id, sede, categoria, ubicacion, ns_torre, ns_monitor FROM equipos WHERE ns_torre = %s OR ns_monitor = %s"
+        else:
+            sql = "SELECT id, sede, categoria, ubicacion, ns_torre, ns_monitor FROM equipos WHERE ns_torre = ? OR ns_monitor = ?"
+            
+        cur.execute(sql, (serial, serial))
+        equipo = cur.fetchone()
+        
+        cur.close()
+        conn.close()
+        
+        if equipo:
+            # Forzamos formato diccionario por si estás probando en local (SQLite)
+            return jsonify(dict(equipo)), 200
+        else:
+            return jsonify({"error": "El número de serie no existe en el sistema"}), 404
+            
+    except Exception as e:
+        return jsonify({"error": f"Error de servidor: {str(e)}"}), 500
+
+
+# 2. RUTA PARA ACTUALIZAR LA UBICACIÓN DESDE EL MÓVIL
+@app.route('/api/equipo/actualizar', methods=['POST'])
+def api_actualizar_ubicacion():
+    try:
+        datos = request.get_json()
+        equipo_id = datos.get('id') # Usamos el ID del equipo que encontramos en el GET
+        nueva_ubicacion = datos.get('nueva_ubicacion')
+        
+        if not equipo_id or not nueva_ubicacion:
+            return jsonify({"error": "Faltan datos obligatorios (id o nueva_ubicacion)"}), 400
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+        
+        # Actualizamos la ubicación usando el ID único del equipo
+        if IS_HEROKU:
+            sql = "UPDATE equipos SET ubicacion = %s WHERE id = %s"
+        else:
+            sql = "UPDATE equipos SET ubicacion = ? WHERE id = ?"
+            
+        cur.execute(sql, (nueva_ubicacion.strip(), equipo_id))
+        conn.commit()
+        
+        cur.close()
+        conn.close()
+        
+        return jsonify({"mensaje": "Ubicación actualizada con éxito en tiempo real"}), 200
+        
+    except Exception as e:
+        return jsonify({"error": f"No se pudo actualizar: {str(e)}"}), 500
 
 if __name__ == '__main__':
     if IS_HEROKU:
