@@ -95,7 +95,6 @@
 <body>
 
 <header class="header-easd">
-    <!-- Envolvemos los logos en un enlace para volver al inicio -->
     <a href="/" class="header-logos" style="display: flex; gap: 15px; text-decoration: none; cursor: pointer;">
         <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" style="max-height: 50px;">
         <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" style="max-height: 50px;">
@@ -107,6 +106,7 @@
     </div>
 
     <div class="header-buttons">
+        <button onclick="exportarCSV()" style="background-color: #1f7246; color: white; border: none; border-radius: 50px; font-weight: bold; padding: 8px 20px; cursor: pointer;"><i class="bi bi-file-earmark-excel me-1"></i> EXPORTAR EXCEL</button>
         <button onclick="imprimirTabla()" class="btn-print" style="background-color: #28a745; color: white; border: none; border-radius: 50px; font-weight: bold; padding: 8px 20px; cursor: pointer;">IMPRIMIR</button>
         <a href="{{ url_for('formulario_nuevo', sede=sede, categoria=categoria, estado=estado) }}" class="btn-add">AÑADIR</a>
         
@@ -119,7 +119,6 @@
 </header>
 
         <div class="top-controls">
-            <!-- Cambiamos el div por un form para habilitar la búsqueda global -->
             <form action="{{ url_for('buscar_global') }}" method="GET" class="search-container">
                 <i class="bi bi-search"></i>
                 <input type="text" 
@@ -151,6 +150,7 @@
                             <th>{% if estado == 'Activo' %}TIPO{% else %}ID INVENTARIO{% endif %}</th>
                             {% if estado != 'Activo' %}<th>CARACTERÍSTICAS</th>{% endif %}
                         {% elif categoria == 'APDS' %}
+                            <th>NS MONITOR</th>
                             <th>ESTADO PREPARACIÓN</th>
                         {% elif categoria == 'HP' and estado == 'Nuevos' %}
                             <th>ID INV. TORRE</th>
@@ -194,6 +194,7 @@
                                 <td class="text-center">{{ e.id_inv_torre or '---' }}</td>
                                 {% if estado != 'Activo' %}<td>{{ (e.aplicaciones or '---') | replace('\n', '<br>') | safe }}</td>{% endif %}
                             {% elif categoria == 'APDS' %}
+                                <td class="text-center text-muted fw-bold">{{ e.ns_monitor or '---' }}</td>
                                 <td class="text-center">
                                     {% if e.preparado %}<span class="badge bg-success">PREPARADO</span>
                                     {% else %}<span class="badge bg-danger">PENDIENTE</span>{% endif %}
@@ -216,7 +217,6 @@
                                         <i class="bi bi-pencil-square"></i>
                                     </a>
                                     
-                                    <!-- Enlace actualizado con el parámetro estado -->
                                     <a href="{{ url_for('eliminar_equipo', id=e.id, sede=sede, categoria=categoria, estado=estado) }}" 
                                     class="btn-delete" 
                                     title="Eliminar"
@@ -258,9 +258,6 @@
 
             groupRows.forEach(row => {
                 const rowText = row.innerText.toLowerCase();
-                // Una fila es visible si:
-                // a) El nombre del aula coincide con la búsqueda
-                // b) Algún otro dato de la fila coincide con la búsqueda
                 if (isUbiMatch || rowText.includes(term)) {
                     row.classList.remove('hidden-row');
                     visibleInGroup.push(row);
@@ -282,7 +279,6 @@
                 if (aulaCell) {
                     aulaCell.style.display = '';
                     aulaCell.rowSpan = visibleInGroup.length;
-                    // Mover la celda del aula a la primera fila que sea visible en este momento
                     if (firstVisibleRow.firstElementChild !== aulaCell) {
                         firstVisibleRow.prepend(aulaCell);
                     }
@@ -296,6 +292,69 @@
     });
 
     function imprimirTabla() { window.print(); }
+
+    // NUEVA FUNCIÓN: EXPORTAR A CSV COMPATIBLE CON EXCEL (UTF-8 CON BOM)
+    function exportarCSV() {
+        const table = document.getElementById("tablaEquipos");
+        const rows = table.querySelectorAll("tbody tr.equipo-row");
+        const headers = table.querySelectorAll("thead th");
+        
+        let csvContent = [];
+        
+        // 1. Obtener los encabezados de las columnas (saltamos la de ACCIONES)
+        let headerData = [];
+        for (let i = 0; i < headers.length - 1; i++) {
+            headerData.push('"' + headers[i].innerText.trim() + '"');
+        }
+        csvContent.push(headerData.join(";"));
+        
+        // 2. Recorrer las filas visibles para extraer los datos
+        let ultimaUbicacion = "";
+        rows.forEach(row => {
+            if (row.classList.contains('hidden-row')) return; // Saltamos filas ocultas por el buscador
+            
+            let rowData = [];
+            
+            // Tratamiento de la ubicación debido al uso de rowspan estructurado
+            const aulaCell = row.querySelector('.aula-cell');
+            if (aulaCell) {
+                ultimaUbicacion = aulaCell.innerText.trim();
+            }
+            rowData.push('"' + ultimaUbicacion + '"');
+            
+            // Extraer el resto de celdas (ignorando la primera si tiene aula-cell y saltando ACCIONES)
+            let celdas = Array.from(row.cells);
+            if (aulaCell) {
+                celdas.shift(); // Quitamos la celda de la ubicación porque ya la procesamos manualmente arriba
+            }
+            
+            for (let i = 0; i < celdas.length - 1; i++) {
+                let cellText = celdas[i].innerText.trim();
+                // Limpiamos los saltos de línea internos para no romper las filas del CSV
+                cellText = cellText.replace(/\n/g, " ").replace(/\r/g, "");
+                rowData.push('"' + cellText + '"');
+            }
+            
+            csvContent.push(rowData.join(";"));
+        });
+        
+        // 3. Crear el fichero usando el BOM de UTF-8 para garantizar compatibilidad total con Excel
+        const csvString = csvContent.join("\n");
+        const blob = new Blob(["\uFEFF" + csvString], { type: "text/csv;charset=utf-8;" });
+        
+        // 4. Configurar la descarga del archivo con el nombre dinámico según categoría y sede
+        const link = document.createElement("a");
+        const url = URL.createObjectURL(blob);
+        const catName = document.getElementById("titulo-categoria").innerText.trim();
+        const sedeName = document.getElementById("titulo-sede").innerText.trim().replace(/\s*\|\s*/g, "_");
+        
+        link.setAttribute("href", url);
+        link.setAttribute("download", `Inventario_${catName}_${sedeName}.csv`);
+        link.style.visibility = 'hidden';
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 </script>
 </body>
 </html>
