@@ -37,6 +37,8 @@
         display: flex; align-items: center; gap: 8px; transition: all 0.2s ease;
     }
     .btn-print { border-color: #28a745; color: #28a745; }
+    .btn-excel { border-color: #1f7246; color: #1f7246; background-color: #fff; }
+    .btn-excel:hover { background-color: #1f7246; color: white; }
 
     /* BUSCADOR */
     .search-box-container {
@@ -126,6 +128,9 @@
 </div>
 
     <div class="header-right" style="display: flex; gap: 12px;">
+        <button onclick="exportarGlobalCSV()" class="btn-action btn-excel">
+            <i class="bi bi-file-earmark-excel"></i> Exportar Excel
+        </button>
         <button onclick="window.print()" class="btn-action btn-print">
             <i class="bi bi-printer"></i> Imprimir PDF
         </button>
@@ -135,7 +140,7 @@
     </div>
 </header>
 
-<div class="search-box-container">
+<div class="search-box-container no-print">
     <input type="text" id="masterSearch" class="search-input" placeholder="🔍 Buscar por Aula, Nº Serie, Categoría, Software, ID Inventario...">
     <div id="globalCounter" class="ms-3 shadow-sm" style="display: none; background: var(--easd-orange); color: white; padding: 10px 20px; border-radius: 50px; font-weight: 800; min-width: 120px; text-align: center;">
         TOTAL: <span id="totalMatches">0</span>
@@ -148,7 +153,7 @@
         <div class="cat-header">{{ categoria }}</div>
 
         {% for estado, equipos in estados.items() %}
-        <div class="estado-container">
+        <div class="estado-container" data-estado="{{ estado }}">
             <div class="estado-header"><i class="bi bi-tag-fill me-2"></i>{{ estado }}</div>
             <div class="table-responsive">
                 <table class="table table-bordered align-middle">
@@ -185,7 +190,7 @@
                                     </td>
                                 {% endif %}
                                 
-                                <td class="fw-bold">{{ e.ns_torre }}</td>
+                                <td class="fw-bold">{{ e.ns_torre or '---' }}</td>
                                 
                                 <td>
                                     {% if categoria == 'APDS' %}
@@ -265,7 +270,7 @@ document.getElementById('masterSearch').addEventListener('keyup', function() {
             }
         });
 
-        // REPARACIÓN DE CELDAS DE UBICACIÓN (Tu lógica actual)
+        // REPARACIÓN DE CELDAS DE UBICACIÓN
         const tables = section.querySelectorAll('table');
         tables.forEach(table => {
             const groups = {};
@@ -306,6 +311,91 @@ document.getElementById('masterSearch').addEventListener('keyup', function() {
         globalCounterDiv.style.display = "none";
     }
 });
+
+// NUEVA FUNCIÓN: EXPORTAR INVENTARIO GLOBAL TOTAL A CSV COMPATIBLE CON EXCEL
+function exportarGlobalCSV() {
+    let csvContent = [];
+    
+    // Encabezado plano universal y estandarizado para recopilar cualquier estructura de tabla
+    // Añadimos CATEGORÍA y ESTADO al inicio de cada fila para que los datos queden ordenados en Excel
+    const headers = ["CATEGORÍA", "ESTADO", "UBICACIÓN", "Nº SERIE", "PANTALLA / PREPARACIÓN", "DATOS COLUMNA 1", "DATOS COLUMNA 2", "DATOS COLUMNA 3", "DATOS COLUMNA 4", "ANOTACIONES"];
+    
+    csvContent.push(headers.map(h => `"${h}"`).join(";"));
+    
+    // Buscamos todas las tarjetas de categoría del documento
+    const sections = document.querySelectorAll(".section-to-filter");
+    
+    sections.forEach(section => {
+        if (section.classList.contains('hidden-section')) return; // Saltamos categorías ocultas por filtro
+        
+        const categoria = section.getAttribute("data-cat").trim();
+        const containers = section.querySelectorAll(".estado-container");
+        
+        containers.forEach(container => {
+            if (container.classList.contains('hidden-section')) return; // Saltamos estados ocultos por filtro
+            
+            const estado = container.getAttribute("data-estado") || container.querySelector(".estado-header").innerText.trim();
+            const rows = container.querySelectorAll("tbody tr.item-row");
+            
+            let ultimaUbicacion = "";
+            
+            rows.forEach(row => {
+                if (row.classList.contains('hidden-row')) return; // Saltamos las filas filtradas
+                
+                let rowData = [ `"${categoria}"`, `"${estado}"` ];
+                
+                // Tratamiento seguro de la celda de Ubicación ('rowspan')
+                const cellUbi = row.querySelector('.celda-ubicacion');
+                if (cellUbi) {
+                    // Extraemos solo el texto del aula (ignorando el contador de unidades de abajo)
+                    const tag = cellUbi.querySelector('.aula-tag');
+                    ultimaUbicacion = tag ? tag.innerText.trim() : cellUbi.innerText.split("\n")[0].trim();
+                }
+                rowData.push(`"${ultimaUbicacion}"`);
+                
+                // Extraemos todas las demás celdas del equipo
+                let celdasRestantes = Array.from(row.cells);
+                if (cellUbi) {
+                    celdasRestantes.shift(); // Si esta fila contenía físicamente la ubicación, la sacamos del array restante
+                }
+                
+                // Agregamos el texto de las celdas limpiando saltos de línea molestos
+                let celdasTexto = celdasRestantes.map(cell => {
+                    let txt = cell.innerText.trim();
+                    return txt.replace(/\n/g, " ").replace(/\r/g, "").replace(/"/g, '""');
+                });
+                
+                // Rellenamos dinámicamente las celdas extraídas dentro del tamaño estándar del CSV
+                for (let i = 0; i < celdasTexto.length; i++) {
+                    rowData.push(`"${celdasTexto[i]}"`);
+                }
+                
+                // Si la tabla tiene menos columnas de la estructura máxima (como APDS), rellenamos con vacíos antes de 'Anotaciones'
+                while (rowData.length < headers.length) {
+                    // Insertamos un campo vacío justo antes de la última celda para mantener 'Anotaciones' en su sitio al final
+                    rowData.splice(rowData.length - 1, 0, '""');
+                }
+                
+                csvContent.push(rowData.join(";"));
+            });
+        });
+    });
+    
+    // Descarga del fichero con el BOM UTF-8 para protección de caracteres en Excel
+    const csvString = csvContent.join("\n");
+    const blob = new Blob(["\uFEFF" + csvString], { type: "text/csv;charset=utf-8;" });
+    
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    const titleSede = document.querySelector(".panel-title").innerText.trim();
+    
+    link.setAttribute("href", url);
+    link.setAttribute("download", `Inventario_Global_${titleSede}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
 </script>
 </body>
 </html>
