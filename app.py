@@ -236,28 +236,37 @@ def agregar_equipo():
         cur.close()
         conn.close()
         serie_chocado = ns_torre if (ns_torre and (equipo_duplicado['ns_torre'] == ns_torre or equipo_duplicado['ns_monitor'] == ns_torre)) else ns_monitor
-        flash(f"❌ Error: El número de serie '{serie_chocado}' ya existe. Registrado en Sede: {equipo_duplicado['sede']} | Ubicación: {equipo_duplicado['ubicacion']} | Categoría: {equipo_duplicado['categoria']}", "danger")
+        flash(f"❌ Error: El número de serie '{serie_chocado}' ya existe. Sede: {equipo_duplicado['sede']} | Ubicación: {equipo_duplicado['ubicacion']} | Categoría: {equipo_duplicado['categoria']}", "danger")
         return redirect(url_for('formulario_nuevo', sede=d['sede'], categoria=d['categoria'], estado=d.get('estado'), last_ub=d['ubicacion']))
     
-    # 2. PROCESADO DEL VALOR PREPARADO / TIPO PANTALLA
-    if d.get('preparado') == 'on' or d.get('preparado') == 1 or d.get('preparado') == '1':
-        valor_preparado = 1
-    else:
-        try:
-            valor_preparado = int(d.get('tipo_pantalla', 0))
-        except (ValueError, TypeError):
-            valor_preparado = 0
+    # 2. PROCESADO DEL VALOR PREPARADO (Lee directamente el Select o Switch del HTML)
+    try:
+        if d.get('preparado') == 'on':
+            valor_preparado = 1
+        else:
+            valor_preparado = int(d.get('preparado', 0))
+    except (ValueError, TypeError):
+        valor_preparado = 0
 
-    sql = f'''INSERT INTO equipos (sede, categoria, ubicacion, ns_torre, id_inv_torre, ns_monitor, id_inv_monitor, applications, anotaciones, estado, preparado)
-              VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})'''
+    info_apps = d.get('aplicaciones', d.get('applications', ''))
 
-    cur.execute(sql, (d['sede'], d['categoria'], d['ubicacion'].strip(), ns_torre, d.get('id_inv_torre',''), 
-                      ns_monitor, d.get('id_inv_monitor',''), d.get('applications', d.get('aplicaciones','')), d.get('anotaciones',''), 
-                      d.get('estado', 'Activo'), valor_preparado))
-    conn.commit()
-    cur.close()
-    conn.close()
-    flash("Guardado correctamente")
+    # 3. INSERCIÓN CON CAPTURA DE ERRORES DE BASE DE DATOS
+    try:
+        sql = f'''INSERT INTO equipos (sede, categoria, ubicacion, ns_torre, id_inv_torre, ns_monitor, id_inv_monitor, applications, anotaciones, estado, preparado)
+                  VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})'''
+
+        cur.execute(sql, (d['sede'], d['categoria'], d['ubicacion'].strip(), ns_torre, d.get('id_inv_torre',''), 
+                          ns_monitor, d.get('id_inv_monitor',''), info_apps, d.get('anotaciones',''), 
+                          d.get('estado', 'Activo'), valor_preparado))
+        conn.commit()
+        flash("✅ Guardado correctamente en el sistema", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"⚠️ Error Crítico de Base de Datos: {str(e)}", "danger")
+    finally:
+        cur.close()
+        conn.close()
+
     return redirect(url_for('formulario_nuevo', sede=d['sede'], categoria=d['categoria'], estado=d.get('estado'), last_ub=d['ubicacion']))
 
 @app.route('/actualizar_equipo', methods=['POST'])
@@ -271,7 +280,7 @@ def actualizar_equipo():
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
     
-    # 1. VERIFICACIÓN DE DUPLICADOS EN EDICIONES (Evitando chocar con OTROS registros, pero permitiendo el propio)
+    # 1. VERIFICACIÓN DE DUPLICADOS EN EDICIONES
     equipo_duplicado = None
     if ns_torre or ns_monitor:
         sql_check = f"""
@@ -291,26 +300,35 @@ def actualizar_equipo():
         cur.close()
         conn.close()
         serie_chocado = ns_torre if (ns_torre and (equipo_duplicado['ns_torre'] == ns_torre or equipo_duplicado['ns_monitor'] == ns_torre)) else ns_monitor
-        flash(f"❌ Error al actualizar: El número de serie '{serie_chocado}' pertenece a otro equipo ya registrado en Sede: {equipo_duplicado['sede']} | Ubicación: {equipo_duplicado['ubicacion']}", "danger")
+        flash(f"❌ Error al actualizar: El número de serie '{serie_chocado}' pertenece a otro equipo registrado en Sede: {equipo_duplicado['sede']} | Ubicación: {equipo_duplicado['ubicacion']}", "danger")
         return redirect(url_for('ver_sede', nombre_sede=d['sede'], cat=d['categoria'], estado=d.get('estado')))
 
     # 2. PROCESADO DEL VALOR PREPARADO
-    if d.get('preparado') == 'on' or d.get('preparado') == 1 or d.get('preparado') == '1':
-        valor_preparado = 1
-    else:
-        try:
-            valor_preparado = int(d.get('tipo_pantalla', 0))
-        except (ValueError, TypeError):
-            valor_preparado = 0
+    try:
+        if d.get('preparado') == 'on':
+            valor_preparado = 1
+        else:
+            valor_preparado = int(d.get('preparado', 0))
+    except (ValueError, TypeError):
+        valor_preparado = 0
         
-    sql = f'''UPDATE equipos SET ubicacion={ph}, ns_torre={ph}, id_inv_torre={ph}, ns_monitor={ph}, id_inv_monitor={ph}, 
-              applications={ph}, anotaciones={ph}, estado={ph}, preparado={ph} WHERE id={ph}'''
-    
-    cur.execute(sql, (d['ubicacion'].strip(), ns_torre, d.get('id_inv_torre',''), ns_monitor, d.get('id_inv_monitor',''), 
-                      d.get('applications', d.get('aplicaciones','')), d.get('anotaciones',''), d.get('estado'), valor_preparado, equipo_id))
-    conn.commit()
-    cur.close()
-    conn.close()
+    info_apps = d.get('aplicaciones', d.get('applications', ''))
+        
+    try:
+        sql = f'''UPDATE equipos SET ubicacion={ph}, ns_torre={ph}, id_inv_torre={ph}, ns_monitor={ph}, id_inv_monitor={ph}, 
+                  applications={ph}, anotaciones={ph}, estado={ph}, preparado={ph} WHERE id={ph}'''
+        
+        cur.execute(sql, (d['ubicacion'].strip(), ns_torre, d.get('id_inv_torre',''), ns_monitor, d.get('id_inv_monitor',''), 
+                          info_apps, d.get('anotaciones',''), d.get('estado'), valor_preparado, equipo_id))
+        conn.commit()
+        flash("✅ Equipo actualizado correctamente", "success")
+    except Exception as e:
+        conn.rollback()
+        flash(f"⚠️ Error al actualizar en Base de Datos: {str(e)}", "danger")
+    finally:
+        cur.close()
+        conn.close()
+
     return redirect(url_for('ver_sede', nombre_sede=d['sede'], cat=d['categoria'], estado=d.get('estado')))
 
 @app.route('/eliminar_equipo/<int:id>/<sede>/<categoria>/<estado>')
