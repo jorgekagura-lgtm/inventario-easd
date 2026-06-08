@@ -192,7 +192,6 @@ def formulario_nuevo(sede, categoria):
     if categoria == 'APDS': estado_defecto = 'Retirada'
     return render_template('nuevo_registro.html', sede=sede, categoria=categoria, equipo=None, estado=estado_defecto, last_ub=request.args.get('last_ub', ''))
 
-# --- NUEVA RUTA CORREGIDA: Habilita el botón "Editar" del HTML ---
 @app.route('/editar_equipo/<int:id>')
 def editar_equipo(id):
     conn = get_db_connection()
@@ -204,7 +203,6 @@ def editar_equipo(id):
     
     if equipo:
         e_dict = dict(equipo)
-        # Redirige al formulario de edición reutilizando la plantilla de nuevo registro
         return render_template('nuevo_registro.html', sede=e_dict['sede'], categoria=e_dict['categoria'], equipo=e_dict, estado=e_dict['estado'], last_ub='')
     flash("Equipo no encontrado")
     return redirect(url_for('index'))
@@ -212,13 +210,36 @@ def editar_equipo(id):
 @app.route('/agregar_equipo', methods=['POST'])
 def agregar_equipo():
     d = request.form
-    conn = get_db_connection()
-    cur = conn.cursor()
-    
+    ns_torre = d.get('ns_torre', '').strip()
+    ns_monitor = d.get('ns_monitor', '').strip()
     ph = "%s" if IS_HEROKU else "?"
-    sql = f'''INSERT INTO equipos (sede, categoria, ubicacion, ns_torre, id_inv_torre, ns_monitor, id_inv_monitor, aplicaciones, anotaciones, estado, preparado)
-              VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})'''
     
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
+    
+    # 1. VERIFICACIÓN DE DUPLICADOS EN ALTAS
+    equipo_duplicado = None
+    if ns_torre or ns_monitor:
+        sql_check = f"""
+            SELECT * FROM equipos 
+            WHERE 
+                ({ph} != '' AND (ns_torre = {ph} OR ns_monitor = {ph}))
+                OR 
+                ({ph} != '' AND (ns_torre = {ph} OR ns_monitor = {ph}))
+        """
+        cur.execute(sql_check, (ns_torre, ns_torre, ns_torre, ns_monitor, ns_monitor, ns_monitor))
+        res = cur.fetchone()
+        if res:
+            equipo_duplicado = dict(res)
+            
+    if equipo_duplicado:
+        cur.close()
+        conn.close()
+        serie_chocado = ns_torre if (ns_torre and (equipo_duplicado['ns_torre'] == ns_torre or equipo_duplicado['ns_monitor'] == ns_torre)) else ns_monitor
+        flash(f"❌ Error: El número de serie '{serie_chocado}' ya existe. Registrado en Sede: {equipo_duplicado['sede']} | Ubicación: {equipo_duplicado['ubicacion']} | Categoría: {equipo_duplicado['categoria']}", "danger")
+        return redirect(url_for('formulario_nuevo', sede=d['sede'], categoria=d['categoria'], estado=d.get('estado'), last_ub=d['ubicacion']))
+    
+    # 2. PROCESADO DEL VALOR PREPARADO / TIPO PANTALLA
     if d.get('preparado') == 'on' or d.get('preparado') == 1 or d.get('preparado') == '1':
         valor_preparado = 1
     else:
@@ -227,10 +248,14 @@ def agregar_equipo():
         except (ValueError, TypeError):
             valor_preparado = 0
 
-    cur.execute(sql, (d['sede'], d['categoria'], d['ubicacion'].strip(), d.get('ns_torre',''), d.get('id_inv_torre',''), 
-                      d.get('ns_monitor',''), d.get('id_inv_monitor',''), d.get('applications', d.get('aplicaciones','')), d.get('anotaciones',''), 
+    sql = f'''INSERT INTO equipos (sede, categoria, ubicacion, ns_torre, id_inv_torre, ns_monitor, id_inv_monitor, applications, anotaciones, estado, preparado)
+              VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})'''
+
+    cur.execute(sql, (d['sede'], d['categoria'], d['ubicacion'].strip(), ns_torre, d.get('id_inv_torre',''), 
+                      ns_monitor, d.get('id_inv_monitor',''), d.get('applications', d.get('aplicaciones','')), d.get('anotaciones',''), 
                       d.get('estado', 'Activo'), valor_preparado))
     conn.commit()
+    cur.close()
     conn.close()
     flash("Guardado correctamente")
     return redirect(url_for('formulario_nuevo', sede=d['sede'], categoria=d['categoria'], estado=d.get('estado'), last_ub=d['ubicacion']))
@@ -238,9 +263,38 @@ def agregar_equipo():
 @app.route('/actualizar_equipo', methods=['POST'])
 def actualizar_equipo():
     d = request.form
-    conn = get_db_connection()
-    cur = conn.cursor()
+    equipo_id = d['id']
+    ns_torre = d.get('ns_torre', '').strip()
+    ns_monitor = d.get('ns_monitor', '').strip()
+    ph = "%s" if IS_HEROKU else "?"
     
+    conn = get_db_connection()
+    cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
+    
+    # 1. VERIFICACIÓN DE DUPLICADOS EN EDICIONES (Evitando chocar con OTROS registros, pero permitiendo el propio)
+    equipo_duplicado = None
+    if ns_torre or ns_monitor:
+        sql_check = f"""
+            SELECT * FROM equipos 
+            WHERE (
+                ({ph} != '' AND (ns_torre = {ph} OR ns_monitor = {ph}))
+                OR 
+                ({ph} != '' AND (ns_torre = {ph} OR ns_monitor = {ph}))
+            ) AND id != {ph}
+        """
+        cur.execute(sql_check, (ns_torre, ns_torre, ns_torre, ns_monitor, ns_monitor, ns_monitor, equipo_id))
+        res = cur.fetchone()
+        if res:
+            equipo_duplicado = dict(res)
+            
+    if equipo_duplicado:
+        cur.close()
+        conn.close()
+        serie_chocado = ns_torre if (ns_torre and (equipo_duplicado['ns_torre'] == ns_torre or equipo_duplicado['ns_monitor'] == ns_torre)) else ns_monitor
+        flash(f"❌ Error al actualizar: El número de serie '{serie_chocado}' pertenece a otro equipo ya registrado en Sede: {equipo_duplicado['sede']} | Ubicación: {equipo_duplicado['ubicacion']}", "danger")
+        return redirect(url_for('ver_sede', nombre_sede=d['sede'], cat=d['categoria'], estado=d.get('estado')))
+
+    # 2. PROCESADO DEL VALOR PREPARADO
     if d.get('preparado') == 'on' or d.get('preparado') == 1 or d.get('preparado') == '1':
         valor_preparado = 1
     else:
@@ -249,14 +303,13 @@ def actualizar_equipo():
         except (ValueError, TypeError):
             valor_preparado = 0
         
-    ph = "%s" if IS_HEROKU else "?"
-    
     sql = f'''UPDATE equipos SET ubicacion={ph}, ns_torre={ph}, id_inv_torre={ph}, ns_monitor={ph}, id_inv_monitor={ph}, 
-              aplicaciones={ph}, anotaciones={ph}, estado={ph}, preparado={ph} WHERE id={ph}'''
+              applications={ph}, anotaciones={ph}, estado={ph}, preparado={ph} WHERE id={ph}'''
     
-    cur.execute(sql, (d['ubicacion'].strip(), d.get('ns_torre',''), d.get('id_inv_torre',''), d.get('ns_monitor',''), d.get('id_inv_monitor',''), 
-                      d.get('applications', d.get('aplicaciones','')), d.get('anotaciones',''), d.get('estado'), valor_preparado, d['id']))
+    cur.execute(sql, (d['ubicacion'].strip(), ns_torre, d.get('id_inv_torre',''), ns_monitor, d.get('id_inv_monitor',''), 
+                      d.get('applications', d.get('aplicaciones','')), d.get('anotaciones',''), d.get('estado'), valor_preparado, equipo_id))
     conn.commit()
+    cur.close()
     conn.close()
     return redirect(url_for('ver_sede', nombre_sede=d['sede'], cat=d['categoria'], estado=d.get('estado')))
 
@@ -274,18 +327,12 @@ def eliminar_equipo(id, sede, categoria, estado):
 #         API PARA LA APLICACIÓN MÓVIL
 # ==========================================
 
-# 1. RUTA PARA CONSULTAR UBICACIÓN (Busca en torre o monitor)
-# ==========================================
-#         API PARA LA APLICACIÓN MÓVIL
-# ==========================================
-
 @app.route('/api/equipo/<serial>', methods=['GET'])
 def api_consultar_equipo(serial):
     try:
         conn = get_db_connection()
         cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
         
-        # AGREGAMOS ", preparado" AL SELECT DE AMBOS CASOS:
         if IS_HEROKU:
             sql = "SELECT id, sede, categoria, ubicacion, ns_torre, ns_monitor, preparado FROM equipos WHERE ns_torre = %s OR ns_monitor = %s"
         else:
@@ -305,13 +352,11 @@ def api_consultar_equipo(serial):
     except Exception as e:
         return jsonify({"error": f"Error de servidor: {str(e)}"}), 500
 
-
-# 2. RUTA PARA ACTUALIZAR LA UBICACIÓN DESDE EL MÓVIL
 @app.route('/api/equipo/actualizar', methods=['POST'])
 def api_actualizar_ubicacion():
     try:
         datos = request.get_json()
-        equipo_id = datos.get('id') # Usamos el ID del equipo que encontramos en el GET
+        equipo_id = datos.get('id')
         nueva_ubicacion = datos.get('nueva_ubicacion')
         
         if not equipo_id or not nueva_ubicacion:
@@ -320,7 +365,6 @@ def api_actualizar_ubicacion():
         conn = get_db_connection()
         cur = conn.cursor()
         
-        # Actualizamos la ubicación usando el ID único del equipo
         if IS_HEROKU:
             sql = "UPDATE equipos SET ubicacion = %s WHERE id = %s"
         else:
