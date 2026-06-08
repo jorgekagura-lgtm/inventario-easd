@@ -6,9 +6,10 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/bootstrap.min.css" rel="stylesheet">
     <style>
         :root { 
-            --easd-blue: #003366; 
+            var(--easd-blue): #003366; 
             --easd-sky: #a8a8a8; 
             --easd-orange: #ff5023; 
+            --easd-blue: #003366;
         }
         
         body { 
@@ -55,8 +56,6 @@
         .card-header h3 { font-weight: 900; letter-spacing: 1px; margin: 0; }
 
         .card-body { padding: 40px; }
-
-        .form-content-wrapper { width: 100%; }
 
         .form-label {
             font-weight: 800;
@@ -114,6 +113,7 @@
             text-transform: uppercase;
             margin-top: 20px;
             box-shadow: 0 4px 12px rgba(255, 80, 35, 0.2);
+            cursor: pointer;
         }
 
         .btn-cancel { 
@@ -129,112 +129,123 @@
             text-align: center;
             margin-top: 15px;
         }
-
-        @media (max-width: 600px) {
-            .header-form { padding: 10px 20px; gap: 10px; }
-            .header-form img { max-height: 30px !important; }
-        }
     </style>
 </head>
 <body>
-
 <header class="header-form">
-    <!-- Envolvemos ambos logos en un único enlace al inicio -->
     <a href="/" style="display: flex; gap: 15px; text-decoration: none; align-items: center;">
         <img src="{{ url_for('static', filename='img/easd-valencia-1.PNG') }}" style="max-height: 45px;">
         <img src="{{ url_for('static', filename='img/easd-valencia-2.PNG') }}" style="max-height: 45px;">
     </a>
 </header>
 
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="container mb-3" style="max-width: 550px;">
+          {% for category, message in messages %}
+            {% if category == 'success' or category == 'info' %}
+              <div class="alert text-center fw-bold rounded-4 shadow-sm" role="alert" style="border: 2px solid #198754; background-color: #f1fbf7; color: #198754;">
+                {{ message }}
+              </div>
+            {% else %}
+              <div class="alert text-center fw-bold rounded-4 shadow-sm" role="alert" style="border: 2px solid #ff5023; background-color: #fff5f2; color: #ff5023;">
+                {{ message }}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+
     <div class="card card-custom">
         <div class="card-header">
-            <h3 class="m-0">{{ 'EDITAR' if equipo else 'AÑADIR' }} {{ categoria }}</h3>
+            <h3>{{ 'EDITAR' if equipo else 'AÑADIR' }} {{ categoria }}</h3>
             <small class="fw-bold opacity-75">{{ sede }} | {{ estado }}</small>
         </div>
 
         <div class="card-body">
-            <div class="form-content-wrapper">
-<form action="{{ url_for('actualizar_equipo') if equipo else url_for('agregar_equipo') }}" method="POST">
-    {% if equipo %}<input type="hidden" name="id" value="{{ equipo.id }}">{% endif %}
-    <input type="hidden" name="sede" value="{{ sede }}">
-    <input type="hidden" name="categoria" value="{{ categoria }}">
-    <input type="hidden" name="estado" value="{{ estado }}">
+            <form action="{{ url_for('actualizar_equipo') if equipo else url_for('agregar_equipo') }}" method="POST">
+                {% if equipo %}<input type="hidden" name="id" value="{{ equipo.id }}">{% endif %}
+                <input type="hidden" name="sede" value="{{ sede }}">
+                <input type="hidden" name="categoria" value="{{ categoria }}">
+                <input type="hidden" name="estado" value="{{ estado }}">
 
-    <div class="form-group-custom">
-        <label class="form-label">UBICACIÓN / AULA</label>
-        <input type="text" name="ubicacion" class="form-control" value="{{ equipo.ubicacion if equipo else last_ub }}" required>
-    </div>
+                <div class="form-group-custom">
+                    <label class="form-label">UBICACIÓN / AULA</label>
+                    <input type="text" name="ubicacion" class="form-control" value="{{ equipo.ubicacion if equipo else last_ub }}" required>
+                </div>
 
-    <p class="form-section-title"><span>DATOS TÉCNICOS</span></p>
+                <p class="form-section-title"><span>DATOS TÉCNICOS</span></p>
 
-    {# Se oculta si es APDS O si es MACS para retirar #}
-    {% if categoria != 'APDS' and not (categoria == 'MACS' and estado == 'Retirar') %}
-    <div class="form-group-custom">
-        <label class="form-label">PANTALLA (TV / Interactiva)</label>
-        <select name="tipo_pantalla" class="form-select">
-            <option value="0" {% if not equipo or equipo.preparado == 0 %}selected{% endif %}>Ninguna / No aplica</option>
-            <option value="1" {% if equipo and equipo.preparado == 1 %}selected{% endif %}>TV</option>
-            <option value="2" {% if equipo and equipo.preparado == 2 %}selected{% endif %}>Pantalla Interactiva</option>
-        </select>
-    </div>
-    {% endif %}
+                {% if categoria != 'APDS' and estado != 'Retirada' %}
+                <div class="form-group-custom">
+                    <label class="form-label">PANTALLA (TV / INTERACTIVA)</label>
+                    <select name="preparado" class="form-select">
+                        <option value="0" {% if equipo and equipo.preparado|int == 0 %}selected{% elif not equipo %}selected{% endif %}>Ninguna / No aplica</option>
+                        <option value="1" {% if equipo and equipo.preparado|int == 1 %}selected{% endif %}>TV</option>
+                        <option value="2" {% if equipo and equipo.preparado|int == 2 %}selected{% endif %}>Pantalla Interactiva</option>
+                    </select>
+                </div>
+                {% endif %}
 
-    <div class="form-group-custom">
-        <label class="form-label">Nº SERIE DISPOSITIVO</label>
-        <input type="text" name="ns_torre" class="form-control" value="{{ equipo.ns_torre if equipo else '' }}" required autofocus>
-    </div>
+                <div class="form-group-custom">
+                    <label class="form-label">Nº SERIE DISPOSITIVO / TORRE</label>
+                    <input type="text" name="ns_torre" class="form-control" value="{{ equipo.ns_torre if equipo else '' }}" autofocus>
+                </div>
 
-    {% if categoria == 'MACS' %}
-        <div class="form-group-custom">
-            <label class="form-label">ID INVENTARIO / TIPO</label>
-            <input type="text" name="id_inv_torre" class="form-control" value="{{ equipo.id_inv_torre if equipo else '' }}">
-        </div>
-    {% elif categoria == 'APDS' %}
-        <div class="switch-container">
-            <label class="form-label">¿EQUIPO PREPARADO?</label>
-            <div class="form-check form-switch">
-                <input class="form-check-input" type="checkbox" name="preparado" id="preparado" {% if equipo and equipo.preparado %}checked{% endif %}>
-            </div>
-        </div>
-    {% elif categoria == 'HP' and estado == 'Nuevos' %}
-        <div class="form-group-custom">
-            <label class="form-label">ID INV. TORRE</label>
-            <input type="text" name="id_inv_torre" class="form-control" value="{{ equipo.id_inv_torre if equipo else '' }}">
-        </div>
-        <div class="form-group-custom">
-            <label class="form-label">Nº SERIE MONITOR</label>
-            <input type="text" name="ns_monitor" class="form-control" value="{{ equipo.ns_monitor if equipo else '' }}">
-        </div>
-        <div class="form-group-custom">
-            <label class="form-label">ID INV. MONITOR</label>
-            <input type="text" name="id_inv_monitor" class="form-control" value="{{ equipo.id_inv_monitor if equipo else '' }}">
-        </div>
-        <div class="form-group-custom">
-            <label class="form-label">PROGRAMAS / APLICACIONES</label>
-            <textarea name="aplicaciones" class="form-control" rows="2">{{ equipo.aplicaciones if equipo else '' }}</textarea>
-        </div>
-    {% else %}
-        <div class="form-group-custom">
-            <label class="form-label">CARACTERÍSTICAS / ID INV.</label>
-            <textarea name="id_inv_torre" class="form-control" rows="2">{{ equipo.id_inv_torre if equipo else '' }}</textarea>
-        </div>
-        <div class="form-group-custom">
-            <label class="form-label">PROGRAMAS / APLICACIONES</label>
-            <textarea name="aplicaciones" class="form-control" rows="2">{{ equipo.aplicaciones if equipo else '' }}</textarea>
-        </div>
-    {% endif %}
+                {% if categoria == 'MACS' %}
+                    <div class="form-group-custom">
+                        <label class="form-label">ID INVENTARIO / TIPO</label>
+                        <input type="text" name="id_inv_torre" class="form-control" value="{{ equipo.id_inv_torre if equipo else '' }}">
+                    </div>
+                {% elif categoria == 'APDS' %}
+                    <div class="switch-container">
+                        <label class="form-label">¿EQUIPO PREPARADO?</label>
+                        <div class="form-check form-switch">
+                            <input class="form-check-input" type="checkbox" name="preparado" id="preparado_check" value="1" {% if equipo and equipo.preparado|int == 1 %}checked{% endif %}>
+                        </div>
+                    </div>
+                    <div class="form-group-custom">
+                        <label class="form-label">Nº SERIE MONITOR</label>
+                        <input type="text" name="ns_monitor" class="form-control" value="{{ equipo.ns_monitor if equipo else '' }}">
+                    </div>
+                {% elif categoria == 'HP' and (estado == 'Activo' or estado == 'En reserva' or estado == 'Nuevos') %}
+                    <div class="form-group-custom">
+                        <label class="form-label">ID INV. TORRE</label>
+                        <input type="text" name="id_inv_torre" class="form-control" value="{{ equipo.id_inv_torre if equipo else '' }}">
+                    </div>
+                    <div class="form-group-custom">
+                        <label class="form-label">Nº SERIE MONITOR</label>
+                        <input type="text" name="ns_monitor" class="form-control" value="{{ equipo.ns_monitor if equipo else '' }}">
+                    </div>
+                    <div class="form-group-custom">
+                        <label class="form-label">ID INV. MONITOR</label>
+                        <input type="text" name="id_inv_monitor" class="form-control" value="{{ equipo.id_inv_monitor if equipo else '' }}">
+                    </div>
+                {% else %}
+                    <div class="form-group-custom">
+                        <label class="form-label">CARACTERÍSTICAS / ID INV.</label>
+                        <textarea name="id_inv_torre" class="form-control" rows="2">{{ equipo.id_inv_torre if equipo else '' }}</textarea>
+                    </div>
+                {% endif %}
 
-    <div class="form-group-custom">
-        <label class="form-label">ANOTACIONES</label>
-        <textarea name="anotaciones" class="form-control" rows="2">{{ equipo.anotaciones if equipo else '' }}</textarea>
-    </div>
+                {% if categoria != 'MACS' and categoria != 'APDS' %}
+                <div class="form-group-custom">
+                    <label class="form-label">PROGRAMAS / APLICACIONES</label>
+                    <textarea name="aplicaciones" class="form-control" rows="2">{% if equipo %}{{ equipo.applications if equipo.applications is defined else equipo.aplicaciones }}{% endif %}</textarea>
+                </div>
+                {% endif %}
 
-    <div class="pt-3">
-        <button type="submit" class="btn btn-save">GUARDAR REGISTRO</button>
-        <a href="{{ url_for('ver_sede', nombre_sede=sede, cat=categoria, estado=estado) }}" class="btn btn-cancel">CANCELAR</a>
-    </div>
-</form>
-            </div>
+                <div class="form-group-custom">
+                    <label class="form-label">ANOTACIONES</label>
+                    <textarea name="anotaciones" class="form-control" rows="2">{{ equipo.anotaciones if equipo else '' }}</textarea>
+                </div>
+
+                <div class="pt-3">
+                    <button type="submit" class="btn btn-save">GUARDAR REGISTRO</button>
+                    <a href="{{ url_for('ver_sede', nombre_sede=sede, cat=categoria, estado=estado) }}" class="btn btn-cancel">CANCELAR</a>
+                </div>
+            </form>
         </div>
     </div>
 </body>
