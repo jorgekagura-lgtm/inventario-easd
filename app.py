@@ -239,7 +239,7 @@ def agregar_equipo():
         flash(f"❌ Error: El número de serie '{serie_chocado}' ya existe. Sede: {equipo_duplicado['sede']} | Ubicación: {equipo_duplicado['ubicacion']} | Categoría: {equipo_duplicado['categoria']}", "danger")
         return redirect(url_for('formulario_nuevo', sede=d['sede'], categoria=d['categoria'], estado=d.get('estado'), last_ub=d['ubicacion']))
     
-    # 2. PROCESADO DEL VALOR PREPARADO (Lee directamente el Select o Switch del HTML)
+    # 2. PROCESADO DEL VALOR PREPARADO
     try:
         if d.get('preparado') == 'on':
             valor_preparado = 1
@@ -248,11 +248,12 @@ def agregar_equipo():
     except (ValueError, TypeError):
         valor_preparado = 0
 
+    # Recogemos el valor de las aplicaciones (siempre en español)
     info_apps = d.get('aplicaciones', d.get('applications', ''))
 
-    # 3. INSERCIÓN CON CAPTURA DE ERRORES DE BASE DE DATOS
+    # 3. INSERCIÓN (Corregido a la columna "aplicaciones")
     try:
-        sql = f'''INSERT INTO equipos (sede, categoria, ubicacion, ns_torre, id_inv_torre, ns_monitor, id_inv_monitor, applications, anotaciones, estado, preparado)
+        sql = f'''INSERT INTO equipos (sede, categoria, ubicacion, ns_torre, id_inv_torre, ns_monitor, id_inv_monitor, aplicaciones, anotaciones, estado, preparado)
                   VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})'''
 
         cur.execute(sql, (d['sede'], d['categoria'], d['ubicacion'].strip(), ns_torre, d.get('id_inv_torre',''), 
@@ -268,6 +269,7 @@ def agregar_equipo():
         conn.close()
 
     return redirect(url_for('formulario_nuevo', sede=d['sede'], categoria=d['categoria'], estado=d.get('estado'), last_ub=d['ubicacion']))
+
 
 @app.route('/actualizar_equipo', methods=['POST'])
 def actualizar_equipo():
@@ -314,9 +316,10 @@ def actualizar_equipo():
         
     info_apps = d.get('aplicaciones', d.get('applications', ''))
         
+    # 3. ACTUALIZACIÓN (Corregido a la columna "aplicaciones")
     try:
         sql = f'''UPDATE equipos SET ubicacion={ph}, ns_torre={ph}, id_inv_torre={ph}, ns_monitor={ph}, id_inv_monitor={ph}, 
-                  applications={ph}, anotaciones={ph}, estado={ph}, preparado={ph} WHERE id={ph}'''
+                  aplicaciones={ph}, anotaciones={ph}, estado={ph}, preparado={ph} WHERE id={ph}'''
         
         cur.execute(sql, (d['ubicacion'].strip(), ns_torre, d.get('id_inv_torre',''), ns_monitor, d.get('id_inv_monitor',''), 
                           info_apps, d.get('anotaciones',''), d.get('estado'), valor_preparado, equipo_id))
