@@ -232,7 +232,7 @@
                 {% if categoria != 'MACS' and categoria != 'APDS' %}
                 <div class="form-group-custom">
                     <label class="form-label">PROGRAMAS / APLICACIONES</label>
-                    <textarea name="aplicaciones" class="form-control" rows="2">{% if equipo %}{{ equipo.applications if equipo.applications is defined else equipo.aplicaciones }}{% endif %}</textarea>
+                    <textarea name="aplicaciones" class="form-control" rows="2">{% if equipo %}{{ equipo.aplicaciones if equipo.aplicaciones is defined else equipo.applications }}{% endif %}</textarea>
                 </div>
                 {% endif %}
 
