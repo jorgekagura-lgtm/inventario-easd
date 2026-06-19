@@ -78,7 +78,7 @@ def init_db():
             id_inv_torre TEXT,
             ns_monitor TEXT,
             id_inv_monitor TEXT,
-            applications TEXT,
+            aplicaciones TEXT,
             anotaciones TEXT, 
             estado TEXT DEFAULT 'Activo',
             preparado INTEGER DEFAULT 0
@@ -233,11 +233,9 @@ def agregar_equipo():
             equipo_duplicado = dict(res)
             
     if equipo_duplicado:
-        cur.close()
-        conn.close()
+        # En vez de hacer un return inmediato, lanzamos un flash de aviso ("warning") y permitimos que continue el flujo
         serie_chocado = ns_torre if (ns_torre and (equipo_duplicado['ns_torre'] == ns_torre or equipo_duplicado['ns_monitor'] == ns_torre)) else ns_monitor
-        flash(f"❌ Error: El número de serie '{serie_chocado}' ya existe. Sede: {equipo_duplicado['sede']} | Ubicación: {equipo_duplicado['ubicacion']} | Categoría: {equipo_duplicado['categoria']}", "danger")
-        return redirect(url_for('formulario_nuevo', sede=d['sede'], categoria=d['categoria'], estado=d.get('estado'), last_ub=d['ubicacion']))
+        flash(f"⚠️ Advertencia: El número de serie '{serie_chocado}' está repetido. Ya existe en Sede: {equipo_duplicado['sede']} | Ubicación: {equipo_duplicado['ubicacion']} | Categoría: {equipo_duplicado['categoria']}.", "warning")
     
     # 2. PROCESADO DEL VALOR PREPARADO
     try:
@@ -256,7 +254,7 @@ def agregar_equipo():
         sql = f'''INSERT INTO equipos (sede, categoria, ubicacion, ns_torre, id_inv_torre, ns_monitor, id_inv_monitor, aplicaciones, anotaciones, estado, preparado)
                   VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})'''
 
-        cur.execute(sql, (d['sede'], d['categoria'], d['ubicacion'].strip(), ns_torre, d.get('id_inv_torre',''), 
+        cur.execute(sql, (d['ubicacion'].strip(), ns_torre, d.get('id_inv_torre',''), 
                           ns_monitor, d.get('id_inv_monitor',''), info_apps, d.get('anotaciones',''), 
                           d.get('estado', 'Activo'), valor_preparado))
         conn.commit()
@@ -299,11 +297,9 @@ def actualizar_equipo():
             equipo_duplicado = dict(res)
             
     if equipo_duplicado:
-        cur.close()
-        conn.close()
+        # En vez de hacer un return inmediato, lanzamos un flash de aviso ("warning") y permitimos que continue el flujo
         serie_chocado = ns_torre if (ns_torre and (equipo_duplicado['ns_torre'] == ns_torre or equipo_duplicado['ns_monitor'] == ns_torre)) else ns_monitor
-        flash(f"❌ Error al actualizar: El número de serie '{serie_chocado}' pertenece a otro equipo registrado en Sede: {equipo_duplicado['sede']} | Ubicación: {equipo_duplicado['ubicacion']}", "danger")
-        return redirect(url_for('ver_sede', nombre_sede=d['sede'], cat=d['categoria'], estado=d.get('estado')))
+        flash(f"⚠️ Advertencia al actualizar: El número de serie '{serie_chocado}' se ha guardado repetido. También pertenece al equipo en Sede: {equipo_duplicado['sede']} | Ubicación: {equipo_duplicado['ubicacion']}.", "warning")
 
     # 2. PROCESADO DEL VALOR PREPARADO
     try:
@@ -345,7 +341,7 @@ def eliminar_equipo(id, sede, categoria, estado):
     return redirect(url_for('ver_sede', nombre_sede=sede, cat=categoria, estado=estado))
 
 # ==========================================
-#         API PARA LA APLICACIÓN MÓVIL
+#   API PARA LA APLICACIÓN MÓVIL
 # ==========================================
 
 @app.route('/api/equipo/<serial>', methods=['GET'])
