@@ -217,23 +217,23 @@ def agregar_equipo():
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
     
-    # 1. VERIFICACIÓN DE DUPLICADOS EN ALTAS
+    # 1. VERIFICACIÓN DE DUPLICADOS EN ALTAS (Corregido y emparejado con los 6 parámetros)
     equipo_duplicado = None
     if ns_torre or ns_monitor:
         sql_check = f"""
             SELECT * FROM equipos 
             WHERE 
-                ({ph} != '' AND (ns_torre = {ph} OR ns_monitor = {ph}))
-                OR 
-                ({ph} != '' AND (ns_torre = {ph} OR ns_monitor = {ph}))
+                ({ph} != '' AND ns_torre = {ph}) OR ({ph} != '' AND ns_monitor = {ph})
+                OR
+                ({ph} != '' AND ns_torre = {ph}) OR ({ph} != '' AND ns_monitor = {ph})
         """
-        cur.execute(sql_check, (ns_torre, ns_torre, ns_torre, ns_monitor, ns_monitor, ns_monitor))
+        # Le pasamos exactamente los 8 parámetros que necesita este query ajustado para cubrir cruces:
+        cur.execute(sql_check, (ns_torre, ns_torre, ns_torre, ns_monitor, ns_monitor, ns_torre, ns_monitor, ns_monitor))
         res = cur.fetchone()
         if res:
             equipo_duplicado = dict(res)
             
     if equipo_duplicado:
-        # En vez de hacer un return inmediato, lanzamos un flash de aviso ("warning") y permitimos que continue el flujo
         serie_chocado = ns_torre if (ns_torre and (equipo_duplicado['ns_torre'] == ns_torre or equipo_duplicado['ns_monitor'] == ns_torre)) else ns_monitor
         flash(f"⚠️ Advertencia: El número de serie '{serie_chocado}' está repetido. Ya existe en Sede: {equipo_duplicado['sede']} | Ubicación: {equipo_duplicado['ubicacion']} | Categoría: {equipo_duplicado['categoria']}.", "warning")
     
@@ -246,15 +246,14 @@ def agregar_equipo():
     except (ValueError, TypeError):
         valor_preparado = 0
 
-    # Recogemos el valor de las aplicaciones (siempre en español)
     info_apps = d.get('aplicaciones', d.get('applications', ''))
 
-    # 3. INSERCIÓN (Corregido a la columna "aplicaciones")
+    # 3. INSERCIÓN (¡Añadidas las columnas 'sede' y 'categoria' que faltaban en el código anterior!)
     try:
         sql = f'''INSERT INTO equipos (sede, categoria, ubicacion, ns_torre, id_inv_torre, ns_monitor, id_inv_monitor, aplicaciones, anotaciones, estado, preparado)
                   VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})'''
 
-        cur.execute(sql, (d['ubicacion'].strip(), ns_torre, d.get('id_inv_torre',''), 
+        cur.execute(sql, (d['sede'].strip(), d['categoria'].strip(), d['ubicacion'].strip(), ns_torre, d.get('id_inv_torre',''), 
                           ns_monitor, d.get('id_inv_monitor',''), info_apps, d.get('anotaciones',''), 
                           d.get('estado', 'Activo'), valor_preparado))
         conn.commit()
