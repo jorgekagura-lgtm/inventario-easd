@@ -217,18 +217,22 @@ def agregar_equipo():
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
     
-    # 1. VERIFICACIÓN DE DUPLICADOS EN ALTAS (Corregido y emparejado con los 6 parámetros)
+    # 1. VERIFICACIÓN DE DUPLICADOS EN ALTAS (Dinámica e inmune a campos vacíos)
     equipo_duplicado = None
-    if ns_torre or ns_monitor:
-        sql_check = f"""
-            SELECT * FROM equipos 
-            WHERE 
-                ({ph} != '' AND ns_torre = {ph}) OR ({ph} != '' AND ns_monitor = {ph})
-                OR
-                ({ph} != '' AND ns_torre = {ph}) OR ({ph} != '' AND ns_monitor = {ph})
-        """
-        # Le pasamos exactamente los 8 parámetros que necesita este query ajustado para cubrir cruces:
-        cur.execute(sql_check, (ns_torre, ns_torre, ns_torre, ns_monitor, ns_monitor, ns_torre, ns_monitor, ns_monitor))
+    condiciones = []
+    valores_query = []
+    
+    if ns_torre != '':
+        condiciones.append(f"ns_torre = {ph} OR ns_monitor = {ph}")
+        valores_query.extend([ns_torre, ns_torre])
+        
+    if ns_monitor != '':
+        condiciones.append(f"ns_torre = {ph} OR ns_monitor = {ph}")
+        valores_query.extend([ns_monitor, ns_monitor])
+        
+    if condiciones:
+        sql_check = f"SELECT * FROM equipos WHERE ({') OR ('.join(condiciones)})"
+        cur.execute(sql_check, tuple(valores_query))
         res = cur.fetchone()
         if res:
             equipo_duplicado = dict(res)
@@ -248,7 +252,7 @@ def agregar_equipo():
 
     info_apps = d.get('aplicaciones', d.get('applications', ''))
 
-    # 3. INSERCIÓN (¡Añadidas las columnas 'sede' y 'categoria' que faltaban en el código anterior!)
+    # 3. INSERCIÓN
     try:
         sql = f'''INSERT INTO equipos (sede, categoria, ubicacion, ns_torre, id_inv_torre, ns_monitor, id_inv_monitor, aplicaciones, anotaciones, estado, preparado)
                   VALUES ({ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph},{ph})'''
@@ -279,24 +283,28 @@ def actualizar_equipo():
     conn = get_db_connection()
     cur = conn.cursor(cursor_factory=RealDictCursor) if IS_HEROKU else conn.cursor()
     
-    # 1. VERIFICACIÓN DE DUPLICADOS EN EDICIONES
+    # 1. VERIFICACIÓN DE DUPLICADOS EN EDICIONES (Dinámica e inmune a campos vacíos)
     equipo_duplicado = None
-    if ns_torre or ns_monitor:
-        sql_check = f"""
-            SELECT * FROM equipos 
-            WHERE (
-                ({ph} != '' AND (ns_torre = {ph} OR ns_monitor = {ph}))
-                OR 
-                ({ph} != '' AND (ns_torre = {ph} OR ns_monitor = {ph}))
-            ) AND id != {ph}
-        """
-        cur.execute(sql_check, (ns_torre, ns_torre, ns_torre, ns_monitor, ns_monitor, ns_monitor, equipo_id))
+    condiciones = []
+    valores_query = []
+    
+    if ns_torre != '':
+        condiciones.append(f"ns_torre = {ph} OR ns_monitor = {ph}")
+        valores_query.extend([ns_torre, ns_torre])
+        
+    if ns_monitor != '':
+        condiciones.append(f"ns_torre = {ph} OR ns_monitor = {ph}")
+        valores_query.extend([ns_monitor, ns_monitor])
+        
+    if condiciones:
+        sql_check = f"SELECT * FROM equipos WHERE ({') OR ('.join(condiciones)}) AND id != {ph}"
+        valores_query.append(equipo_id)
+        cur.execute(sql_check, tuple(valores_query))
         res = cur.fetchone()
         if res:
             equipo_duplicado = dict(res)
             
     if equipo_duplicado:
-        # En vez de hacer un return inmediato, lanzamos un flash de aviso ("warning") y permitimos que continue el flujo
         serie_chocado = ns_torre if (ns_torre and (equipo_duplicado['ns_torre'] == ns_torre or equipo_duplicado['ns_monitor'] == ns_torre)) else ns_monitor
         flash(f"⚠️ Advertencia al actualizar: El número de serie '{serie_chocado}' se ha guardado repetido. También pertenece al equipo en Sede: {equipo_duplicado['sede']} | Ubicación: {equipo_duplicado['ubicacion']}.", "warning")
 
@@ -311,7 +319,7 @@ def actualizar_equipo():
         
     info_apps = d.get('aplicaciones', d.get('applications', ''))
         
-    # 3. ACTUALIZACIÓN (Corregido a la columna "aplicaciones")
+    # 3. ACTUALIZACIÓN
     try:
         sql = f'''UPDATE equipos SET ubicacion={ph}, ns_torre={ph}, id_inv_torre={ph}, ns_monitor={ph}, id_inv_monitor={ph}, 
                   aplicaciones={ph}, anotaciones={ph}, estado={ph}, preparado={ph} WHERE id={ph}'''
